@@ -1,13 +1,14 @@
 name: Publish to npm
 
 on:
-  push:
+  pull_request:
     branches:
-      - main # main 브랜치에 푸시될 때 실행
+      - main # main 브랜치에 pull request 때 실행
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
