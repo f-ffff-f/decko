@@ -81,6 +81,7 @@ export class Decko {
     }
 
     this.releaseBuffer(deck, 0)
+
     this.playPauseDeck(deckId)
   }
 
@@ -225,7 +226,6 @@ export class Decko {
   /** 버퍼 해제 */
   private releaseBuffer(deck: IDeck, nextStartTime: number) {
     if (!deck.bufferSourceNode) {
-      console.error('bufferSourceNode is not created')
       return
     }
 
