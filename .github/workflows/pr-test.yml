@@ -1,12 +1,12 @@
-name: NPM Publish
+name: PR Test
 
 on:
-  push:
+  pull_request:
     branches:
-      - main # main 브랜치에 병합된 후 publish용
+      - main
 
 jobs:
-  publish:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,15 +17,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          registry-url: 'https://registry.npmjs.org/'
 
       - name: Install dependencies
         run: npm install
 
       - name: Run tests
         run: npm run test
-
-      - name: Publish to npm
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
