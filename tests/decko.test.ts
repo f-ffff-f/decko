@@ -1,24 +1,31 @@
 import { Decko, EDeckIds } from '../src/index'
 
 describe('Decko Unit Tests with Mocks', () => {
-  let decko: Decko
+  const decko = new Decko()
 
-  beforeEach(() => {
-    decko = new Decko()
-  })
+  const allDeckIds = [EDeckIds.DECK_1, EDeckIds.DECK_2]
 
   test('초기화 시 2개의 데크가 생성되어야 한다', () => {
-    const deck1 = decko.getDeck(EDeckIds.DECK_1)
-    const deck2 = decko.getDeck(EDeckIds.DECK_2)
-    expect(deck1).toBeDefined()
-    expect(deck2).toBeDefined()
+    allDeckIds.forEach(deckId => {
+      const deck = decko.getDeck(deckId)
+      expect(deck).toBeDefined()
+    })
   })
 
   test('데크 1, 2에 오디오 파일을 로드할 수 있어야 한다', async () => {
     const blob = new Blob(['test'], { type: 'audio/mp3' })
-    await decko.loadTrack(EDeckIds.DECK_1, blob)
-    await decko.loadTrack(EDeckIds.DECK_2, blob)
-    expect(decko.getDeck(EDeckIds.DECK_1)?.audioBuffer).toBeDefined()
-    expect(decko.getDeck(EDeckIds.DECK_2)?.audioBuffer).toBeDefined()
+    allDeckIds.forEach(async deckId => {
+      await decko.loadTrack(deckId, blob)
+    })
+
+    allDeckIds.forEach(deckId => {
+      expect(decko.getDeck(deckId)?.audioBuffer).toBeDefined()
+    })
+  })
+
+  test('데크 1, 2에 로드한 후 자동재생이 되어야 한다', async () => {
+    allDeckIds.forEach(deckId => {
+      expect(decko.isPlaying(deckId)).toBe(true)
+    })
   })
 })
