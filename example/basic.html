@@ -81,7 +81,7 @@
         <input type="file" id="file2" accept="audio/*">
       </div>
       <div class="controls">
-        <button id="playPause2">재생/일시정지</button>
+        <button id="playPause2">Play/Pause</button>
         <div>
           <label for="volume2">Volume:</label>
           <input type="range" id="volume2" min="0" max="1" step="0.01" value="1">
@@ -111,7 +111,6 @@
   <script type="module">
     import { deckoSingleton, EDeckIds } from '../dist/decko.es.js'
 
-    console.log(deckoSingleton)
     // 시간 포맷 함수
     const formatTime = (seconds) => {
       const mins = Math.floor(seconds / 60)
@@ -165,13 +164,11 @@
     // 재생/일시정지 이벤트 - 데크 1
     playPause1Button.addEventListener('click', () => {
       deckoSingleton.playPauseDeck(EDeckIds.DECK_1)
-      updatePlayPauseButton(EDeckIds.DECK_1)
     })
 
     // 재생/일시정지 이벤트 - 데크 2
     playPause2Button.addEventListener('click', () => {
       deckoSingleton.playPauseDeck(EDeckIds.DECK_2)
-      updatePlayPauseButton(EDeckIds.DECK_2)
     })
 
     // 볼륨 변경 이벤트 - 데크 1
@@ -214,12 +211,6 @@
     crossfaderSlider.addEventListener('input', () => {
       deckoSingleton.setCrossFade(parseFloat(crossfaderSlider.value))
     })
-
-    // 재생/일시정지 버튼 업데이트
-    function updatePlayPauseButton(deckId) {
-      const button = deckId === EDeckIds.DECK_1 ? playPause1Button : playPause2Button
-      button.textContent = deckoSingleton.isPlaying(deckId) ? '일시정지' : '재생'
-    }
 
     // 시간 표시 업데이트
     function updateTimeDisplay(deckId) {
