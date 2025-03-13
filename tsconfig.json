@@ -7,5 +7,5 @@
     "strict": true,
     "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["src", "tests", "tests/jest.setup.js"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "tests", "tests/jest.setup.js"]
 }
