@@ -15,47 +15,85 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ... PR 정보 가져오기 ...
-
       - name: Determine version type
         id: version-type
         run: |
-          # PR 라벨 등을 기반으로 버전 타입 결정
+          # 여기서 PR 라벨 등을 기반으로 버전 타입 결정 (예시로 patch)
           echo "type=patch" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Release
+      - name: Calculate new version and create release
         id: create-release
         uses: actions/github-script@v6
         with:
           script: |
-            const { execSync } = require('child_process');
-            const packageJson = require(`${process.env.GITHUB_WORKSPACE}/package.json`);
+            const fs = require('fs');
+            // package.json의 기본 버전을 읽음
+            const packageJsonPath = `${process.env.GITHUB_WORKSPACE}/package.json`;
+            let packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
-            let versionType = "${{ steps.version-type.outputs.type }}";
-            let versionArgs = "";
-
-            if (versionType === "major") {
-              versionArgs = "major";
-            } else if (versionType === "minor") {
-              versionArgs = "minor";
-            } else {
-              versionArgs = "patch";
+            // 간단한 bump 함수 (semver 형식: X.Y.Z)
+            function bumpVersion(version, type) {
+              const parts = version.split('.').map(Number);
+              if (type === 'major') {
+                return `${parts[0] + 1}.0.0`;
+              } else if (type === 'minor') {
+                return `${parts[0]}.${parts[1] + 1}.0`;
+              } else {
+                return `${parts[0]}.${parts[1]}.${parts[2] + 1}`;
+              }
             }
 
-            // 버전 업데이트 (--no-git-tag-version은 git tag 자동 생성을 방지)
-            execSync(`npm version ${versionArgs} --no-git-tag-version`);
+            // 기존 버전 정보: 마지막 릴리즈 태그가 있으면 그 값을 사용하고,
+            // 없으면 package.json의 버전을 기준으로 함.
+            let currentVersion = packageJson.version;
+            try {
+              const latestRelease = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              // 태그 형식이 vX.Y.Z라고 가정
+              currentVersion = latestRelease.data.tag_name.replace(/^v/, '');
+              console.log(`Found latest release: ${currentVersion}`);
+            } catch (error) {
+              if (error.status === 404) {
+                console.log("No previous release found, using package.json version");
+              } else {
+                throw error;
+              }
+            }
 
-            // 새 버전 가져오기
-            const newVersion = require(`${process.env.GITHUB_WORKSPACE}/package.json`).version;
+            const versionType = "${{ steps.version-type.outputs.type }}";
+            const newVersion = bumpVersion(currentVersion, versionType);
+            const tagName = `v${newVersion}`;
 
-            const { data } = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: `v${newVersion}`,
-              name: `Release v${newVersion}`,
-              body: `Version ${newVersion} 출시`,
-              draft: false,
-              prerelease: false
-            });
+            // 혹시 같은 태그로 릴리즈가 이미 존재하는지 확인 (방어적 코드)
+            let releaseExists = false;
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tagName
+              });
+              console.log(`Release with tag ${tagName} already exists.`);
+              releaseExists = true;
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
 
-            return data;
+            if (!releaseExists) {
+              const { data } = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tagName,
+                name: `Release ${tagName}`,
+                body: `Version ${newVersion} 출시`,
+                draft: false,
+                prerelease: false
+              });
+              console.log(`Release ${tagName} created.`);
+              return data;
+            } else {
+              return { message: `Release ${tagName} already exists.` };
+            }
