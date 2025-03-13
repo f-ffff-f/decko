@@ -67,6 +67,9 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          # 변경된 파일이 있는지 확인하고 모두 커밋
+          git add .
+          git diff --staged --quiet || git commit -m "chore: pre-version commit"
 
       - name: Bump version
         id: version-bump
