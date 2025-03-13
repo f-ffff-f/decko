@@ -19,13 +19,45 @@ jobs:
         with:
           node-version: 18
 
+      - name: Get PR labels
+        id: pr-labels
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            const labels = pullRequest.labels.map(label => label.name);
+            console.log(`PR Labels: ${labels.join(', ')}`);
+
+            let versionType = "patch"; // 기본값
+
+            if (labels.includes("major")) {
+              versionType = "major";
+            } else if (labels.includes("minor")) {
+              versionType = "minor";
+            } else if (labels.includes("patch")) {
+              versionType = "patch";
+            }
+
+            console.log(`Selected version type: ${versionType}`);
+            return versionType;
+
       - name: Bump version using npm
         run: |
           # git 사용자 정보 설정
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # npm version 명령어로 patch 버전 bump (필요 시 major/minor로 수정)
-          npm version patch -m "Bump version to %s via PR"
+
+          # PR 라벨에 따라 버전 타입 결정
+          VERSION_TYPE="${{ steps.pr-labels.outputs.result }}"
+          echo "버전 타입: $VERSION_TYPE"
+
+          # npm version 명령어로 버전 bump
+          npm version $VERSION_TYPE -m "Bump $VERSION_TYPE version to %s via PR"
 
       - name: Push bumped version back to branch
         run: |
