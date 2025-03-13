@@ -1,0 +1,32 @@
+name: Bump Version on PR Creation
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Bump version using npm
+        run: |
+          # git 사용자 정보 설정
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # npm version 명령어로 patch 버전 bump (필요 시 major/minor로 수정)
+          npm version patch -m "Bump version to %s via PR"
+
+      - name: Push bumped version back to branch
+        run: |
+          git push origin HEAD:${{ github.head_ref }} --follow-tags
