@@ -15,50 +15,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get merged PR information
-        id: get-pr-info
-        run: |
-          # 최근 병합된 PR 번호 찾기
-          PR_NUMBER=$(git log -1 --pretty=%B | grep -o '#[0-9]\+' | head -1 | sed 's/#//')
-          if [ -z "$PR_NUMBER" ]; then
-            echo "No PR number found in the commit message"
-            echo "version_type=patch" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          echo "PR number: $PR_NUMBER"
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-
-          # GitHub API를 통해 PR 정보 가져오기
-          PR_INFO=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                    "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
-
-          # PR 라벨 확인
-          LABELS=$(echo "$PR_INFO" | jq -r '.labels[].name')
-          echo "PR labels: $LABELS"
-
-          # 버전 타입 결정 (우선순위: major > minor > patch)
-          VERSION_TYPE="patch"  # 기본값
-
-          if echo "$LABELS" | grep -q "major"; then
-            VERSION_TYPE="major"
-          elif echo "$LABELS" | grep -q "minor"; then
-            VERSION_TYPE="minor"
-          elif echo "$LABELS" | grep -q "patch"; then
-            VERSION_TYPE="patch"
-          fi
-
-          echo "Version type: $VERSION_TYPE"
-          echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
+      # ... PR 정보 가져오기 ...
 
       - name: Determine version type
         id: version-type
         run: |
-          # PR 라벨 등을 기반으로 버전 타입 결정 (위 단계에서 가져온 값 사용)
-          VERSION_TYPE="${{ steps.get-pr-info.outputs.version_type }}"
-          if [ -z "$VERSION_TYPE" ]; then
-            VERSION_TYPE="patch"  # 기본값
-          fi
-          echo "type=$VERSION_TYPE" >> $GITHUB_OUTPUT
+          # PR 라벨 등을 기반으로 버전 타입 결정
+          echo "type=patch" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         id: create-release
@@ -79,77 +42,20 @@ jobs:
               versionArgs = "patch";
             }
 
-            // 현재 버전 확인
-            const currentVersion = packageJson.version;
-            console.log(`Current version: ${currentVersion}`);
+            // 버전 업데이트 (--no-git-tag-version은 git tag 자동 생성을 방지)
+            execSync(`npm version ${versionArgs} --no-git-tag-version`);
 
-            try {
-              // 기존 태그 확인
-              const { data: tags } = await github.rest.repos.listTags({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                per_page: 100
-              });
-              
-              // 버전 업데이트 (--no-git-tag-version은 git tag 자동 생성을 방지)
-              execSync(`npm version ${versionArgs} --no-git-tag-version`);
-              
-              // 새 버전 가져오기
-              const newVersion = require(`${process.env.GITHUB_WORKSPACE}/package.json`).version;
-              console.log(`New version: ${newVersion}`);
-              
-              // 이미 존재하는 태그인지 확인
-              const tagExists = tags.some(tag => tag.name === `v${newVersion}`);
-              if (tagExists) {
-                console.log(`Tag v${newVersion} already exists. Incrementing version again.`);
-                // 이미 존재하는 태그라면 한 번 더 버전 증가
-                execSync(`npm version ${versionArgs} --no-git-tag-version`);
-                const newerVersion = require(`${process.env.GITHUB_WORKSPACE}/package.json`).version;
-                console.log(`Incremented to version: ${newerVersion}`);
-                
-                // 릴리스 생성
-                const { data } = await github.rest.repos.createRelease({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  tag_name: `v${newerVersion}`,
-                  name: `Release v${newerVersion}`,
-                  body: `Version ${newerVersion} 출시`,
-                  draft: false,
-                  prerelease: false
-                });
-                return data;
-              } else {
-                // 릴리스 생성
-                const { data } = await github.rest.repos.createRelease({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  tag_name: `v${newVersion}`,
-                  name: `Release v${newVersion}`,
-                  body: `Version ${newVersion} 출시`,
-                  draft: false,
-                  prerelease: false
-                });
-                return data;
-              }
-            } catch (error) {
-              if (error.status === 422 && error.message.includes('already_exists')) {
-                console.log('Release tag already exists. Incrementing version and trying again.');
-                // 이미 존재하는 태그라면 한 번 더 버전 증가
-                execSync(`npm version ${versionArgs} --no-git-tag-version`);
-                const newerVersion = require(`${process.env.GITHUB_WORKSPACE}/package.json`).version;
-                
-                // 릴리스 생성 재시도
-                const { data } = await github.rest.repos.createRelease({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  tag_name: `v${newerVersion}`,
-                  name: `Release v${newerVersion}`,
-                  body: `Version ${newerVersion} 출시`,
-                  draft: false,
-                  prerelease: false
-                });
-                return data;
-              } else {
-                throw error;
-              }
-            }
+            // 새 버전 가져오기
+            const newVersion = require(`${process.env.GITHUB_WORKSPACE}/package.json`).version;
+
+            const { data } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${newVersion}`,
+              name: `Release v${newVersion}`,
+              body: `Version ${newVersion} 출시`,
+              draft: false,
+              prerelease: false
+            });
+
+            return data;
