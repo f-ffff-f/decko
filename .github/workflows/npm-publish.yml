@@ -12,6 +12,44 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get merged PR information
+        id: get-pr-info
+        run: |
+          # 최근 병합된 PR 번호 찾기
+          PR_NUMBER=$(git log -1 --pretty=%B | grep -o '#[0-9]\+' | head -1 | sed 's/#//')
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No PR number found in the commit message"
+            echo "version_type=patch" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "PR number: $PR_NUMBER"
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+
+          # GitHub API를 통해 PR 정보 가져오기
+          PR_INFO=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                    "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
+
+          # PR 라벨 확인
+          LABELS=$(echo "$PR_INFO" | jq -r '.labels[].name')
+          echo "PR labels: $LABELS"
+
+          # 버전 타입 결정 (우선순위: major > minor > patch)
+          VERSION_TYPE="patch"  # 기본값
+
+          if echo "$LABELS" | grep -q "major"; then
+            VERSION_TYPE="major"
+          elif echo "$LABELS" | grep -q "minor"; then
+            VERSION_TYPE="minor"
+          elif echo "$LABELS" | grep -q "patch"; then
+            VERSION_TYPE="patch"
+          fi
+
+          echo "Version type: $VERSION_TYPE"
+          echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
 
       - name: Install Node.js
         uses: actions/setup-node@v3
@@ -24,6 +62,42 @@ jobs:
 
       - name: Run tests
         run: npm run test
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Bump version
+        id: version-bump
+        run: |
+          # 현재 버전 가져오기
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+
+          # PR 라벨에 따라 버전 업데이트
+          VERSION_TYPE="${{ steps.get-pr-info.outputs.version_type }}"
+
+          if [ "$VERSION_TYPE" == "major" ]; then
+            echo "Performing MAJOR version update based on PR label"
+            npm version major -m "bump: 메이저 버전 %s로 업데이트 (PR #${{ steps.get-pr-info.outputs.pr_number }})"
+          elif [ "$VERSION_TYPE" == "minor" ]; then
+            echo "Performing MINOR version update based on PR label"
+            npm version minor -m "bump: 마이너 버전 %s로 업데이트 (PR #${{ steps.get-pr-info.outputs.pr_number }})"
+          else
+            echo "Performing PATCH version update based on PR label"
+            npm version patch -m "bump: 패치 버전 %s로 업데이트 (PR #${{ steps.get-pr-info.outputs.pr_number }})"
+          fi
+
+          # 새 버전 가져오기
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "New version: $NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Push changes
+        run: |
+          git push
+          git push --tags
 
       - name: Publish to npm
         run: npm publish --access public
