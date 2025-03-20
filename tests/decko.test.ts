@@ -163,4 +163,125 @@ describe('Decko Unit Tests with Single Instance', () => {
     testDeck.isSeeking = false
     expect(decko.isSeeking(testDeck.id)).toBe(false)
   })
+
+  test('isTrackLoading은 트랙 로딩 상태를 올바르게 반환해야 한다', () => {
+    // 첫 번째 데크에 대해서만 테스트
+    const testDeck = allDecks[0]
+    testDeck.isTrackLoading = true
+    expect(decko.isTrackLoading(testDeck.id)).toBe(true)
+    testDeck.isTrackLoading = false
+    expect(decko.isTrackLoading(testDeck.id)).toBe(false)
+  })
+
+  test('loadTrack 호출 중에는 isTrackLoading이 true로 설정되어야 한다', async () => {
+    // createSourceNode 메소드를 모의하여 오류 우회
+    const originalCreateSourceNode = decko['createSourceNode']
+    decko['createSourceNode'] = jest.fn().mockImplementation(() => {
+      const mockSourceNode = {
+        start: jest.fn(),
+        stop: jest.fn(),
+        connect: jest.fn(),
+        playbackRate: { value: 1 },
+      } as unknown as AudioBufferSourceNode
+      return mockSourceNode
+    })
+
+    // Mock AudioContext's decodeAudioData
+    const originalDecodeAudioData = AudioContext.prototype.decodeAudioData
+    const mockDecodeAudioData = jest.fn().mockImplementation(() => {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          const mockAudioBuffer = {
+            duration: 30,
+            // 필요한 AudioBuffer의 다른 속성들 추가
+            length: 1000,
+            numberOfChannels: 2,
+            sampleRate: 44100,
+            getChannelData: jest.fn().mockReturnValue(new Float32Array(1000)),
+          }
+          resolve(mockAudioBuffer as unknown as AudioBuffer)
+        }, 100)
+      })
+    })
+
+    // @ts-ignore - audioContext는 private이지만 테스트를 위해 접근
+    decko.audioContext.decodeAudioData = mockDecodeAudioData
+
+    const testDeck = allDecks[0]
+    const blob = new Blob(['test'], { type: 'audio/mp3' })
+
+    // 기존 bufferSourceNode 정리
+    testDeck.bufferSourceNode = null
+
+    // loadTrack 호출 중에 isTrackLoading 확인
+    const loadingCheckPromise = new Promise<void>(resolve => {
+      setTimeout(() => {
+        expect(decko.isTrackLoading(testDeck.id)).toBe(true)
+        resolve()
+      }, 50)
+    })
+
+    // Start loading the track
+    const loadPromise = decko.loadTrack(testDeck.id, blob)
+
+    // Wait for both promises
+    await Promise.all([loadingCheckPromise, loadPromise])
+
+    // After loading completes, isTrackLoading should be false
+    expect(decko.isTrackLoading(testDeck.id)).toBe(false)
+
+    // Restore original implementations
+    // @ts-ignore
+    decko.audioContext.decodeAudioData = originalDecodeAudioData
+    decko['createSourceNode'] = originalCreateSourceNode
+  })
+
+  test('loadTrack에서 에러가 발생해도 isTrackLoading은 false로 설정되어야 한다', async () => {
+    // createSourceNode 메소드를 모의하여 오류 우회
+    const originalCreateSourceNode = decko['createSourceNode']
+    decko['createSourceNode'] = jest.fn().mockImplementation(() => {
+      const mockSourceNode = {
+        start: jest.fn(),
+        stop: jest.fn(),
+        connect: jest.fn(),
+        playbackRate: { value: 1 },
+      } as unknown as AudioBufferSourceNode
+      return mockSourceNode
+    })
+
+    // Mock decodeAudioData to throw an error
+    const originalDecodeAudioData = AudioContext.prototype.decodeAudioData
+    const mockDecodeAudioData = jest.fn().mockImplementation(() => {
+      return new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Audio decoding failed'))
+        }, 100)
+      })
+    })
+
+    // @ts-ignore - audioContext는 private이지만 테스트를 위해 접근
+    decko.audioContext.decodeAudioData = mockDecodeAudioData
+
+    // Spy on console.error to avoid polluting test output
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
+
+    const testDeck = allDecks[0]
+    const blob = new Blob(['test'], { type: 'audio/mp3' })
+
+    // 기존 bufferSourceNode 정리
+    testDeck.bufferSourceNode = null
+
+    // Start loading (which will fail)
+    await decko.loadTrack(testDeck.id, blob)
+
+    // After error, isTrackLoading should still be false
+    expect(decko.isTrackLoading(testDeck.id)).toBe(false)
+    expect(consoleSpy).toHaveBeenCalled()
+
+    // Restore original implementations
+    // @ts-ignore
+    decko.audioContext.decodeAudioData = originalDecodeAudioData
+    decko['createSourceNode'] = originalCreateSourceNode
+    consoleSpy.mockRestore()
+  })
 })

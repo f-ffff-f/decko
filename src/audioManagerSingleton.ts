@@ -16,6 +16,7 @@ interface IDeck {
   nextStartTime: number
   isPlaying: boolean
   isSeeking: boolean
+  isTrackLoading: boolean
 }
 
 export class Decko {
@@ -61,6 +62,7 @@ export class Decko {
       nextStartTime: 0,
       isPlaying: false,
       isSeeking: false,
+      isTrackLoading: false,
     }
 
     this.decks.push(deck)
@@ -73,11 +75,14 @@ export class Decko {
     if (!deck) return
 
     try {
+      deck.isTrackLoading = true
       const arrayBuffer = await blob.arrayBuffer()
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
       deck.audioBuffer = audioBuffer
     } catch (error) {
       console.error('Failed to load audio file:', error)
+    } finally {
+      deck.isTrackLoading = false
     }
 
     this.releaseBuffer(deck, 0)
@@ -210,6 +215,12 @@ export class Decko {
     return deck ? deck.isSeeking : false
   }
 
+  /** 로딩 상태 확인 */
+  isTrackLoading(deckId: EDeckIds): boolean {
+    const deck = this.findDeck(deckId)
+    return deck ? deck.isTrackLoading : false
+  }
+
   /** AudioBufferSourceNode 생성 */
   private createSourceNode(deck: IDeck): AudioBufferSourceNode {
     const sourceNode = this.audioContext.createBufferSource()
@@ -246,6 +257,7 @@ export class Decko {
       audioBuffer: deck.audioBuffer ? 'loaded' : 'not loaded',
       bufferSourceNode: deck.bufferSourceNode ? 'created' : 'not created',
       isPlaying: deck.isPlaying,
+      isTrackLoading: deck.isTrackLoading,
       nextStartTime: deck.nextStartTime.toFixed(0),
       prevStartTime: deck.prevStartTime.toFixed(0),
     }))

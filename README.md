@@ -111,6 +111,11 @@ const getDuration = () => {
 const isPlaying = () => {
   return deckoSingleton.isPlaying(EDeckIds.DECK_1)
 }
+
+// Check is track loading
+const isTrackPlaying = () => {
+  return deckoSingleton.isTrackPlaying(EDeckIds.DECK_1)
+}
 ```
 
 ### Example Code
