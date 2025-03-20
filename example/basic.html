@@ -24,6 +24,24 @@
       border: 1px solid #ccc;
       padding: 15px;
       border-radius: 5px;
+      position: relative;
+    }
+
+    .deck.loading {
+      background-color: #fff8e6;
+    }
+
+    .loading-indicator {
+      color: #ff6700;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    #deck1-status,
+    #deck2-status {
+      margin-top: 10px;
+      font-size: 14px;
+      transition: opacity 1s ease;
     }
 
     .controls {
@@ -34,6 +52,11 @@
       padding: 8px 12px;
       margin-right: 5px;
       cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .crossfader {
@@ -143,10 +166,27 @@
     file1Input.addEventListener('change', async (event) => {
       if (event.target.files.length > 0) {
         const file = event.target.files[0]
+        const deck1Element = document.getElementById('deck1')
+        deck1Element.classList.add('loading')
+        playPause1Button.disabled = true
+
+        // Add loading indicator text
+        const loadingIndicator = document.createElement('div')
+        loadingIndicator.id = 'loading-indicator-1'
+        loadingIndicator.className = 'loading-indicator'
+        loadingIndicator.textContent = 'Loading track...'
+        deck1Element.appendChild(loadingIndicator)
+
         await deckoSingleton.loadTrack(EDeckIds.DECK_1, file)
         seek1Slider.disabled = false
         seek1Slider.max = deckoSingleton.getAudioBufferDuration(EDeckIds.DECK_1)
         updateTimeDisplay(EDeckIds.DECK_1)
+
+        // Remove loading class and indicator when done
+        deck1Element.classList.remove('loading')
+        playPause1Button.disabled = false
+        const indicator = document.getElementById('loading-indicator-1')
+        if (indicator) indicator.remove()
       }
     })
 
@@ -154,10 +194,27 @@
     file2Input.addEventListener('change', async (event) => {
       if (event.target.files.length > 0) {
         const file = event.target.files[0]
+        const deck2Element = document.getElementById('deck2')
+        deck2Element.classList.add('loading')
+        playPause2Button.disabled = true
+
+        // Add loading indicator text
+        const loadingIndicator = document.createElement('div')
+        loadingIndicator.id = 'loading-indicator-2'
+        loadingIndicator.className = 'loading-indicator'
+        loadingIndicator.textContent = 'Loading track...'
+        deck2Element.appendChild(loadingIndicator)
+
         await deckoSingleton.loadTrack(EDeckIds.DECK_2, file)
         seek2Slider.disabled = false
         seek2Slider.max = deckoSingleton.getAudioBufferDuration(EDeckIds.DECK_2)
         updateTimeDisplay(EDeckIds.DECK_2)
+
+        // Remove loading class and indicator when done
+        deck2Element.classList.remove('loading')
+        playPause2Button.disabled = false
+        const indicator = document.getElementById('loading-indicator-2')
+        if (indicator) indicator.remove()
       }
     })
 
@@ -227,6 +284,67 @@
       }
     }
 
+    // isTrackLoading 상태 감시 함수
+    function checkTrackLoadingStatus() {
+      // First deck loading status check
+      const isDeck1Loading = deckoSingleton.isTrackLoading(EDeckIds.DECK_1)
+      const deck1Status = document.createElement('div')
+      deck1Status.id = 'deck1-status'
+
+      // Only add if doesn't exist
+      if (!document.getElementById('deck1-status')) {
+        const deck1Element = document.getElementById('deck1')
+        deck1Element.appendChild(deck1Status)
+      } else {
+        const deck1StatusElement = document.getElementById('deck1-status')
+        if (isDeck1Loading) {
+          deck1StatusElement.textContent = 'Track loading in progress...'
+          deck1StatusElement.style.color = '#ff6700'
+        } else if (deckoSingleton.getAudioBuffer(EDeckIds.DECK_1)) {
+          deck1StatusElement.textContent = 'Track loaded successfully!'
+          deck1StatusElement.style.color = 'green'
+          // Fade out after 3 seconds
+          setTimeout(() => {
+            deck1StatusElement.style.opacity = '0'
+            setTimeout(() => {
+              if (deck1StatusElement) deck1StatusElement.remove()
+            }, 1000)
+          }, 3000)
+        } else {
+          deck1StatusElement.textContent = ''
+        }
+      }
+
+      // Second deck loading status check
+      const isDeck2Loading = deckoSingleton.isTrackLoading(EDeckIds.DECK_2)
+      const deck2Status = document.createElement('div')
+      deck2Status.id = 'deck2-status'
+
+      // Only add if doesn't exist
+      if (!document.getElementById('deck2-status')) {
+        const deck2Element = document.getElementById('deck2')
+        deck2Element.appendChild(deck2Status)
+      } else {
+        const deck2StatusElement = document.getElementById('deck2-status')
+        if (isDeck2Loading) {
+          deck2StatusElement.textContent = 'Track loading in progress...'
+          deck2StatusElement.style.color = '#ff6700'
+        } else if (deckoSingleton.getAudioBuffer(EDeckIds.DECK_2)) {
+          deck2StatusElement.textContent = 'Track loaded successfully!'
+          deck2StatusElement.style.color = 'green'
+          // Fade out after 3 seconds
+          setTimeout(() => {
+            deck2StatusElement.style.opacity = '0'
+            setTimeout(() => {
+              if (deck2StatusElement) deck2StatusElement.remove()
+            }, 1000)
+          }, 3000)
+        } else {
+          deck2StatusElement.textContent = ''
+        }
+      }
+    }
+
     // 주기적으로 시간 업데이트
     setInterval(() => {
       if (deckoSingleton.getAudioBuffer(EDeckIds.DECK_1)) {
@@ -235,6 +353,9 @@
       if (deckoSingleton.getAudioBuffer(EDeckIds.DECK_2)) {
         updateTimeDisplay(EDeckIds.DECK_2)
       }
+
+      // Check loading status
+      checkTrackLoadingStatus()
     }, 100);
   </script>
 </body>
