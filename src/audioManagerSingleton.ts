@@ -1,7 +1,4 @@
-export enum EDeckIds {
-  DECK_1 = 1,
-  DECK_2 = 2,
-}
+import { EDeckIds } from './types'
 
 const clampGain = (value: number): number => Math.max(0, Math.min(1, value))
 

@@ -1,1 +1,2 @@
-export { Decko, deckoSingleton, EDeckIds } from './audioManagerSingleton'
+export { Decko, deckoSingleton } from './audioManagerSingleton'
+export { EDeckIds } from './types'
