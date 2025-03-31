@@ -1,9 +1,7 @@
-export enum EDeckIds {
+enum EDeckIds {
   DECK_1 = 1,
   DECK_2 = 2,
 }
-
-const clampGain = (value: number): number => Math.max(0, Math.min(1, value))
 
 interface IDeck {
   id: EDeckIds
@@ -103,10 +101,10 @@ export class Decko {
       const playbackTime = this.getPlaybackTime(deckId)
       this.releaseBuffer(deck, playbackTime)
     } else {
-      deck.bufferSourceNode = this.createSourceNode(deck) // 재생 시마다 새로 생성해야 함
+      deck.bufferSourceNode = this.createSourceNode(deck)
       deck.bufferSourceNode.playbackRate.value = deck.speed
       deck.bufferSourceNode.start(0, deck.nextStartTime)
-      deck.prevStartTime = this.getElapsedTime(deck.nextStartTime)
+      deck.prevStartTime = this.audioContext.currentTime
       deck.isPlaying = true
     }
   }
@@ -137,7 +135,7 @@ export class Decko {
   setVolume(deckId: EDeckIds, volume: number) {
     const deck = this.findDeck(deckId)
     if (!deck) return
-    deck.gainNode.gain.value = clampGain(volume)
+    deck.gainNode.gain.value = this.clampGain(volume)
   }
 
   /** 개별 속도 조절 */
@@ -152,7 +150,7 @@ export class Decko {
 
   /** 크로스페이드 조절 */
   setCrossFade(value: number) {
-    this.crossFadeValue = clampGain(value)
+    this.crossFadeValue = this.clampGain(value)
     if (this.decks[0]) {
       this.decks[0].crossFadeNode.gain.value = Math.cos((value * Math.PI) / 2)
     }
@@ -178,7 +176,7 @@ export class Decko {
     if (!deck) return 0
 
     return deck.isPlaying
-      ? this.getElapsedTime(deck.prevStartTime)
+      ? deck.nextStartTime + this.getElapsedTime(deck.prevStartTime, deck.speed)
       : deck.nextStartTime
   }
 
@@ -221,6 +219,10 @@ export class Decko {
     return deck ? deck.isTrackLoading : false
   }
 
+  private clampGain(value: number): number {
+    return Math.max(0, Math.min(1, value))
+  }
+
   /** AudioBufferSourceNode 생성 */
   private createSourceNode(deck: IDeck): AudioBufferSourceNode {
     const sourceNode = this.audioContext.createBufferSource()
@@ -247,8 +249,9 @@ export class Decko {
   }
 
   /** 기록한 시간 부터 경과된 시간 */
-  private getElapsedTime(lastRecordedTime: number): number {
-    return this.audioContext.currentTime - lastRecordedTime
+  private getElapsedTime(lastRecordedTime: number, speed: number): number {
+    const realTimeElapsed = this.audioContext.currentTime - lastRecordedTime
+    return realTimeElapsed * speed
   }
 
   public debugManager() {
