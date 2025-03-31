@@ -1,4 +1,9 @@
-import { Decko, EDeckIds } from '../src/index'
+import { Decko } from '../src/index'
+
+enum EDeckIds {
+  DECK_1 = 1,
+  DECK_2 = 2,
+}
 
 // 한 번만 인스턴스 생성 (모든 테스트가 같은 인스턴스를 공유)
 const decko = new Decko()

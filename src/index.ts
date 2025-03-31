@@ -1,1 +1,1 @@
-export { Decko, deckoSingleton } from './audioManagerSingleton'
+export { Decko, deckoSingleton } from './deckoSingleton'

@@ -132,7 +132,12 @@
   <script src="../dist/decko.es.js"></script>
 
   <script type="module">
-    import { deckoSingleton, EDeckIds } from '../dist/decko.es.js'
+    import { deckoSingleton } from '../dist/decko.es.js'
+
+    const EDeckIds = {
+      DECK_1: 1,
+      DECK_2: 2,
+    }
 
     // 시간 포맷 함수
     const formatTime = (seconds) => {
@@ -284,67 +289,6 @@
       }
     }
 
-    // isTrackLoading 상태 감시 함수
-    function checkTrackLoadingStatus() {
-      // First deck loading status check
-      const isDeck1Loading = deckoSingleton.isTrackLoading(EDeckIds.DECK_1)
-      const deck1Status = document.createElement('div')
-      deck1Status.id = 'deck1-status'
-
-      // Only add if doesn't exist
-      if (!document.getElementById('deck1-status')) {
-        const deck1Element = document.getElementById('deck1')
-        deck1Element.appendChild(deck1Status)
-      } else {
-        const deck1StatusElement = document.getElementById('deck1-status')
-        if (isDeck1Loading) {
-          deck1StatusElement.textContent = 'Track loading in progress...'
-          deck1StatusElement.style.color = '#ff6700'
-        } else if (deckoSingleton.getAudioBuffer(EDeckIds.DECK_1)) {
-          deck1StatusElement.textContent = 'Track loaded successfully!'
-          deck1StatusElement.style.color = 'green'
-          // Fade out after 3 seconds
-          setTimeout(() => {
-            deck1StatusElement.style.opacity = '0'
-            setTimeout(() => {
-              if (deck1StatusElement) deck1StatusElement.remove()
-            }, 1000)
-          }, 3000)
-        } else {
-          deck1StatusElement.textContent = ''
-        }
-      }
-
-      // Second deck loading status check
-      const isDeck2Loading = deckoSingleton.isTrackLoading(EDeckIds.DECK_2)
-      const deck2Status = document.createElement('div')
-      deck2Status.id = 'deck2-status'
-
-      // Only add if doesn't exist
-      if (!document.getElementById('deck2-status')) {
-        const deck2Element = document.getElementById('deck2')
-        deck2Element.appendChild(deck2Status)
-      } else {
-        const deck2StatusElement = document.getElementById('deck2-status')
-        if (isDeck2Loading) {
-          deck2StatusElement.textContent = 'Track loading in progress...'
-          deck2StatusElement.style.color = '#ff6700'
-        } else if (deckoSingleton.getAudioBuffer(EDeckIds.DECK_2)) {
-          deck2StatusElement.textContent = 'Track loaded successfully!'
-          deck2StatusElement.style.color = 'green'
-          // Fade out after 3 seconds
-          setTimeout(() => {
-            deck2StatusElement.style.opacity = '0'
-            setTimeout(() => {
-              if (deck2StatusElement) deck2StatusElement.remove()
-            }, 1000)
-          }, 3000)
-        } else {
-          deck2StatusElement.textContent = ''
-        }
-      }
-    }
-
     // 주기적으로 시간 업데이트
     setInterval(() => {
       if (deckoSingleton.getAudioBuffer(EDeckIds.DECK_1)) {
@@ -354,8 +298,6 @@
         updateTimeDisplay(EDeckIds.DECK_2)
       }
 
-      // Check loading status
-      checkTrackLoadingStatus()
     }, 100);
   </script>
 </body>

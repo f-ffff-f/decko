@@ -1,10 +1,7 @@
-enum EDeckIds {
-  DECK_1 = 1,
-  DECK_2 = 2,
-}
+type TDeckIds = 1 | 2
 
 interface IDeck {
-  id: EDeckIds
+  id: TDeckIds
   audioBuffer: AudioBuffer | null
   bufferSourceNode: AudioBufferSourceNode | null
   gainNode: GainNode
@@ -19,7 +16,7 @@ interface IDeck {
 
 export class Decko {
   private audioContext: AudioContext
-  private nextId = EDeckIds.DECK_1
+  private nextId = 1
   private decks: IDeck[] = []
   private crossFadeValue = 0.5
 
@@ -50,7 +47,7 @@ export class Decko {
     gainNode.connect(crossFadeNode).connect(masterGainNode)
 
     const deck: IDeck = {
-      id: this.nextId++ as EDeckIds,
+      id: this.nextId++ as TDeckIds,
       audioBuffer: null,
       bufferSourceNode: null,
       gainNode,
@@ -68,7 +65,7 @@ export class Decko {
   }
 
   /** 특정 데크에 파일 로드 */
-  async loadTrack(deckId: EDeckIds, blob: Blob) {
+  async loadTrack(deckId: TDeckIds, blob: Blob) {
     const deck = this.findDeck(deckId)
     if (!deck) return
 
@@ -89,7 +86,7 @@ export class Decko {
   }
 
   /** 재생 정지 토글 */
-  async playPauseDeck(deckId: EDeckIds) {
+  async playPauseDeck(deckId: TDeckIds) {
     const deck = this.findDeck(deckId)
     if (!deck || !deck.audioBuffer) return
 
@@ -110,7 +107,7 @@ export class Decko {
   }
 
   /** 데크 이동 */
-  seekDeck(deckId: EDeckIds, seekTime: number) {
+  seekDeck(deckId: TDeckIds, seekTime: number) {
     const deck = this.findDeck(deckId)
     if (!deck || !deck.audioBuffer) return
 
@@ -132,14 +129,14 @@ export class Decko {
   }
 
   /** 개별 볼륨 조절 */
-  setVolume(deckId: EDeckIds, volume: number) {
+  setVolume(deckId: TDeckIds, volume: number) {
     const deck = this.findDeck(deckId)
     if (!deck) return
     deck.gainNode.gain.value = this.clampGain(volume)
   }
 
   /** 개별 속도 조절 */
-  setSpeed(deckId: EDeckIds, speed: number) {
+  setSpeed(deckId: TDeckIds, speed: number) {
     const deck = this.findDeck(deckId)
     if (!deck) return
     deck.speed = speed
@@ -161,17 +158,17 @@ export class Decko {
     }
   }
 
-  getDeck(deckId: EDeckIds): IDeck | undefined {
+  getDeck(deckId: TDeckIds): IDeck | undefined {
     return this.findDeck(deckId)
   }
 
-  getAudioBuffer(deckId: EDeckIds): AudioBuffer | null {
+  getAudioBuffer(deckId: TDeckIds): AudioBuffer | null {
     const deck = this.findDeck(deckId)
     return deck?.audioBuffer ?? null
   }
 
   /** 현재 플레이백 시간 */
-  getPlaybackTime(deckId: EDeckIds): number {
+  getPlaybackTime(deckId: TDeckIds): number {
     const deck = this.findDeck(deckId)
     if (!deck) return 0
 
@@ -181,18 +178,18 @@ export class Decko {
   }
 
   /** 전체 재생 길이 */
-  getAudioBufferDuration(deckId: EDeckIds): number {
+  getAudioBufferDuration(deckId: TDeckIds): number {
     const deck = this.findDeck(deckId)
     return deck?.audioBuffer?.duration ?? 0
   }
 
   /** 개별 볼륨 */
-  getVolume(deckId: EDeckIds): number {
+  getVolume(deckId: TDeckIds): number {
     return this.findDeck(deckId)?.gainNode.gain.value ?? 0
   }
 
   /** 개별 속도 */
-  getSpeed(deckId: EDeckIds): number {
+  getSpeed(deckId: TDeckIds): number {
     return this.findDeck(deckId)?.speed ?? 1
   }
 
@@ -202,19 +199,19 @@ export class Decko {
   }
 
   /** 재생 여부 */
-  isPlaying(deckId: EDeckIds): boolean {
+  isPlaying(deckId: TDeckIds): boolean {
     const deck = this.findDeck(deckId)
     return deck ? deck.isPlaying : false
   }
 
   /** 이동 여부 */
-  isSeeking(deckId: EDeckIds): boolean {
+  isSeeking(deckId: TDeckIds): boolean {
     const deck = this.findDeck(deckId)
     return deck ? deck.isSeeking : false
   }
 
   /** 로딩 상태 확인 */
-  isTrackLoading(deckId: EDeckIds): boolean {
+  isTrackLoading(deckId: TDeckIds): boolean {
     const deck = this.findDeck(deckId)
     return deck ? deck.isTrackLoading : false
   }
@@ -232,7 +229,7 @@ export class Decko {
   }
 
   /** 데크 찾기 */
-  private findDeck(deckId: EDeckIds): IDeck | undefined {
+  private findDeck(deckId: TDeckIds): IDeck | undefined {
     return this.decks.find(d => d.id === deckId)
   }
 
