@@ -1,13 +1,11 @@
-'use client'
-
 type TDeckIds = 1 | 2
 
 interface IDeck {
   id: TDeckIds
   audioBuffer: AudioBuffer | null
   bufferSourceNode: AudioBufferSourceNode | null
-  gainNode: GainNode
-  crossFadeNode: GainNode
+  gainNode: GainNode | null
+  crossFadeNode: GainNode | null
   speed: number
   prevStartTime: number
   nextStartTime: number
@@ -17,23 +15,36 @@ interface IDeck {
 }
 
 export class Decko {
-  private audioContext: AudioContext
+  private audioContext: AudioContext | null = null
   private nextId = 1
   private decks: IDeck[] = []
   private crossFadeValue = 0.5
+  private isInitialized = false
 
   constructor() {
-    this.audioContext = new AudioContext()
-    this.init()
+    // 생성자에서는 초기화하지 않음
   }
 
+  /**
+   * 브라우저 환경에서만 호출할 수 있는 초기화 함수
+   * Next.js에서는 useEffect 내에서 호출해야 함
+   */
   init() {
+    // 이미 초기화되었거나 브라우저 환경이 아니면 실행하지 않음
+    if (this.isInitialized || typeof window === 'undefined') return
+
+    this.audioContext = new AudioContext()
     const masterGainNode = this.getMasterGainNode()
-    this.addDeck(masterGainNode)
-    this.addDeck(masterGainNode)
+    if (masterGainNode) {
+      this.addDeck(masterGainNode)
+      this.addDeck(masterGainNode)
+    }
+    this.isInitialized = true
   }
 
-  getMasterGainNode() {
+  getMasterGainNode(): GainNode | null {
+    if (!this.audioContext) return null
+
     const reductionNode = this.audioContext.createGain()
     reductionNode.gain.value = 0.25
     reductionNode.connect(this.audioContext.destination)
@@ -41,7 +52,9 @@ export class Decko {
   }
 
   /** Deck을 추가 */
-  addDeck(masterGainNode: GainNode) {
+  addDeck(masterGainNode: GainNode): IDeck | null {
+    if (!this.audioContext) return null
+
     const gainNode = this.audioContext.createGain()
     const crossFadeNode = this.audioContext.createGain()
     crossFadeNode.gain.value = this.crossFadeValue
@@ -68,6 +81,9 @@ export class Decko {
 
   /** 특정 데크에 파일 로드 */
   async loadTrack(deckId: TDeckIds, blob: Blob) {
+    if (!this.isInitialized) this.init()
+    if (!this.audioContext) return
+
     const deck = this.findDeck(deckId)
     if (!deck) return
 
@@ -89,8 +105,11 @@ export class Decko {
 
   /** 재생 정지 토글 */
   async playPauseDeck(deckId: TDeckIds) {
+    if (!this.isInitialized) this.init()
+    if (!this.audioContext) return
+
     const deck = this.findDeck(deckId)
-    if (!deck || !deck.audioBuffer) return
+    if (!deck || !deck.audioBuffer || !deck.gainNode) return
 
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume()
@@ -101,15 +120,20 @@ export class Decko {
       this.releaseBuffer(deck, playbackTime)
     } else {
       deck.bufferSourceNode = this.createSourceNode(deck)
-      deck.bufferSourceNode.playbackRate.value = deck.speed
-      deck.bufferSourceNode.start(0, deck.nextStartTime)
-      deck.prevStartTime = this.audioContext.currentTime
-      deck.isPlaying = true
+      if (deck.bufferSourceNode) {
+        deck.bufferSourceNode.playbackRate.value = deck.speed
+        deck.bufferSourceNode.start(0, deck.nextStartTime)
+        deck.prevStartTime = this.audioContext.currentTime
+        deck.isPlaying = true
+      }
     }
   }
 
   /** 데크 이동 */
   seekDeck(deckId: TDeckIds, seekTime: number) {
+    if (!this.isInitialized) this.init()
+    if (!this.audioContext) return
+
     const deck = this.findDeck(deckId)
     if (!deck || !deck.audioBuffer) return
 
@@ -132,15 +156,21 @@ export class Decko {
 
   /** 개별 볼륨 조절 */
   setVolume(deckId: TDeckIds, volume: number) {
+    if (!this.isInitialized) this.init()
+
     const deck = this.findDeck(deckId)
-    if (!deck) return
+    if (!deck || !deck.gainNode) return
+
     deck.gainNode.gain.value = this.clampGain(volume)
   }
 
   /** 개별 속도 조절 */
   setSpeed(deckId: TDeckIds, speed: number) {
+    if (!this.isInitialized) this.init()
+
     const deck = this.findDeck(deckId)
     if (!deck) return
+
     deck.speed = speed
 
     if (!deck.bufferSourceNode) return
@@ -149,11 +179,15 @@ export class Decko {
 
   /** 크로스페이드 조절 */
   setCrossFade(value: number) {
+    if (!this.isInitialized) this.init()
+
     this.crossFadeValue = this.clampGain(value)
-    if (this.decks[0]) {
+
+    if (this.decks[0] && this.decks[0].crossFadeNode) {
       this.decks[0].crossFadeNode.gain.value = Math.cos((value * Math.PI) / 2)
     }
-    if (this.decks[1]) {
+
+    if (this.decks[1] && this.decks[1].crossFadeNode) {
       this.decks[1].crossFadeNode.gain.value = Math.cos(
         ((1 - value) * Math.PI) / 2
       )
@@ -171,6 +205,8 @@ export class Decko {
 
   /** 현재 플레이백 시간 */
   getPlaybackTime(deckId: TDeckIds): number {
+    if (!this.audioContext) return 0
+
     const deck = this.findDeck(deckId)
     if (!deck) return 0
 
@@ -187,7 +223,7 @@ export class Decko {
 
   /** 개별 볼륨 */
   getVolume(deckId: TDeckIds): number {
-    return this.findDeck(deckId)?.gainNode.gain.value ?? 0
+    return this.findDeck(deckId)?.gainNode?.gain.value ?? 0
   }
 
   /** 개별 속도 */
@@ -218,12 +254,19 @@ export class Decko {
     return deck ? deck.isTrackLoading : false
   }
 
+  /** 초기화 여부 확인 */
+  isReady(): boolean {
+    return this.isInitialized && !!this.audioContext
+  }
+
   private clampGain(value: number): number {
     return Math.max(0, Math.min(1, value))
   }
 
   /** AudioBufferSourceNode 생성 */
-  private createSourceNode(deck: IDeck): AudioBufferSourceNode {
+  private createSourceNode(deck: IDeck): AudioBufferSourceNode | null {
+    if (!this.audioContext || !deck.audioBuffer || !deck.gainNode) return null
+
     const sourceNode = this.audioContext.createBufferSource()
     sourceNode.buffer = deck.audioBuffer
     sourceNode.connect(deck.gainNode)
@@ -249,11 +292,15 @@ export class Decko {
 
   /** 기록한 시간 부터 경과된 시간 */
   private getElapsedTime(lastRecordedTime: number, speed: number): number {
+    if (!this.audioContext) return 0
+
     const realTimeElapsed = this.audioContext.currentTime - lastRecordedTime
     return realTimeElapsed * speed
   }
 
   public debugManager() {
+    if (!this.audioContext) return 'AudioContext not initialized'
+
     const _decks = this.decks.map(deck => ({
       id: deck.id,
       audioBuffer: deck.audioBuffer ? 'loaded' : 'not loaded',
