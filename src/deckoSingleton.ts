@@ -1,3 +1,5 @@
+'use client'
+
 type TDeckIds = 1 | 2
 
 interface IDeck {
