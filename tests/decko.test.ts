@@ -1,4 +1,4 @@
-import { Decko } from '../src/index'
+import { Decko } from '../src/deckoSingleton'
 
 enum EDeckIds {
   DECK_1 = 1,
