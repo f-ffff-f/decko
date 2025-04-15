@@ -5,7 +5,10 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "outDir": "dist",
-    "strict": true
+    "strict": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "esModuleInterop": true
   },
-  "include": ["src/**/*.ts", "tests", "tests/jest.setup.js"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests", "tests/jest.setup.js"]
 }
