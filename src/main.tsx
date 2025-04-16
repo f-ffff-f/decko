@@ -1,10 +1,12 @@
 import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import ContextApp from './contextVersion/ContextApp'
-import { DeckoProvider } from './contextVersion/DeckoProvider'
+import ContextApp from '@/contextVersion/ContextApp'
+import { DeckoProvider as ContextDeckoProvider } from '@/contextVersion/DeckoProvider'
+import ObserverApp from '@/observerVersion/ObserverApp'
+import { DeckoProvider as ObserverDeckoProvider } from '@/observerVersion/DeckoProvider'
 
 // Define which test to run
-const WHICH_TEST: 'context' | 'pubsub' | 'observer' = 'context'
+let WHICH_TEST: string = 'observer'
 
 const rootElement = document.getElementById('root')!
 
@@ -13,20 +15,16 @@ if (WHICH_TEST === 'context') {
   // 2. React의 createRoot API를 사용하여 React 루트를 생성합니다
   // 3. React 컴포넌트를 루트에 렌더링합니다
   createRoot(rootElement).render(
-    React.createElement(
-      StrictMode,
-      null,
-      React.createElement(
-        DeckoProvider,
-        null,
-        React.createElement(ContextApp, null)
-      )
-    )
+    <ContextDeckoProvider>
+      <ContextApp />
+    </ContextDeckoProvider>
   )
-} else if (WHICH_TEST === 'pubsub') {
-  // Pubsub implementation to come
 } else if (WHICH_TEST === 'observer') {
-  // Observer implementation to come
+  createRoot(rootElement).render(
+    <ObserverDeckoProvider>
+      <ObserverApp />
+    </ObserverDeckoProvider>
+  )
 } else {
   throw new Error(`Unknown test: ${WHICH_TEST}`)
 }
