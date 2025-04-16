@@ -1,6 +1,5 @@
-import { EDeckIds } from './constants'
+import { EDeckIds } from '@/constants'
 
-/** @TODO react 생태계로 마이그레이션 my-redux 참고해서 만들어보기*/
 interface IDeck {
   id: EDeckIds
   audioBuffer: AudioBuffer | null

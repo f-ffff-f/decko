@@ -1,7 +1,7 @@
 import { startTransition, useEffect, useReducer } from 'react'
-import { EDeckIds } from './constants'
-import { useDecko } from './useDecko'
-import { formatTime } from './util'
+import { EDeckIds } from '@/constants'
+import { useDeckoContext } from '@/contextVersion/useDeckoContext'
+import { formatTime } from '@/util'
 
 // Define types for our state and actions
 type DJState = {
@@ -51,8 +51,8 @@ const djReducer = (state: DJState, action: DJAction): DJState => {
 /**
  * Main application component
  */
-const App = () => {
-  const decko = useDecko()
+const ContextApp = () => {
+  const decko = useDeckoContext()
 
   const initialState: DJState = {
     decks: Object.fromEntries(
@@ -278,4 +278,4 @@ const App = () => {
   )
 }
 
-export default App
+export default ContextApp
