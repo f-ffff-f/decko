@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App'
-import { DeckoProvider } from './DeckoProvider'
+import App from './contextVersion/App'
+import { DeckoProvider } from './contextVersion/DeckoProvider'
 
 // 1. DOM에서 root 요소를 찾습니다
 // 2. React의 createRoot API를 사용하여 React 루트를 생성합니다

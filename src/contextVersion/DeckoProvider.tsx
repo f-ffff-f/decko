@@ -1,7 +1,7 @@
 // src/custom-react-redux/Provider.js
 import { ReactNode, useRef } from 'react'
-import { DeckoContext } from './context'
-import { Decko } from './deckoSingleton'
+import { DeckoContext } from '@/contextVersion/context'
+import { Decko } from '@/deckoSingleton'
 
 export const DeckoProvider = ({ children }: { children: ReactNode }) => {
   const deckoRef = useRef<InstanceType<typeof Decko> | null>(new Decko())
