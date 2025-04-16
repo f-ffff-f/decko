@@ -51,7 +51,7 @@ const djReducer = (state: DJState, action: DJAction): DJState => {
 /**
  * Main application component
  */
-const App = () => {
+const ContextApp = () => {
   const decko = useDeckoContext()
 
   const initialState: DJState = {
@@ -278,4 +278,4 @@ const App = () => {
   )
 }
 
-export default App
+export default ContextApp
