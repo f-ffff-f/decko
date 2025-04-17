@@ -1,24 +1,32 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { EDeckIds } from '@/constants'
-import { useDeckoState } from '@/observerVersion/useDeckState' // 경로 확인
-import { useDeckoContext } from '@/observerVersion/useDeckoContext'
 import { formatTime } from '@/util' // 경로 확인
+import {
+  selectDeckSpeed,
+  selectDeckVolume,
+  useDeckoStore,
+  selectDeckAudioBufferDuration,
+} from '@/zustandVersion/useDeckoStore'
+import { getDecko } from '@/zustandVersion/Decko'
 
 interface DeckComponentProps {
   deckId: EDeckIds
 }
 
 const DeckComponent: React.FC<DeckComponentProps> = ({ deckId }) => {
-  const decko = useDeckoContext() // 컨트롤 함수 사용 위함
-  const {
-    isPlaying,
-    currentTime,
-    duration,
-    volume,
-    speed,
-    isTrackLoading,
-    isSeeking, // 필요하다면 isSeeking 상태도 useDeckoState에 추가
-  } = useDeckoState(deckId) // 커스텀 훅 사용
+  const [currentTime, setCurrentTime] = useState(0)
+
+  const volume = useDeckoStore(selectDeckVolume(deckId))
+  const speed = useDeckoStore(selectDeckSpeed(deckId))
+  const duration = useDeckoStore(selectDeckAudioBufferDuration(deckId))
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(getDecko().getPlaybackTime(deckId))
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [deckId])
 
   return (
     <div className="app-container">
@@ -34,7 +42,7 @@ const DeckComponent: React.FC<DeckComponentProps> = ({ deckId }) => {
                 onChange={e => {
                   const file = e.target.files?.[0]
                   if (file) {
-                    decko.loadTrack(deckId, file)
+                    getDecko().loadTrack(deckId, file)
                   }
                 }}
               />
@@ -42,7 +50,7 @@ const DeckComponent: React.FC<DeckComponentProps> = ({ deckId }) => {
             <div className="controls">
               <button
                 id="playPause1"
-                onClick={() => decko.playPauseDeck(deckId)}
+                onClick={() => getDecko().playPauseDeck(deckId)}
               >
                 Play/Pause
               </button>
@@ -56,7 +64,7 @@ const DeckComponent: React.FC<DeckComponentProps> = ({ deckId }) => {
                   step="0.01"
                   value={volume}
                   onChange={e =>
-                    decko.setVolume(deckId, parseFloat(e.target.value))
+                    getDecko().setVolume(deckId, parseFloat(e.target.value))
                   }
                 />
               </div>
@@ -70,7 +78,7 @@ const DeckComponent: React.FC<DeckComponentProps> = ({ deckId }) => {
                   step="0.01"
                   value={speed}
                   onChange={e =>
-                    decko.setSpeed(deckId, parseFloat(e.target.value))
+                    getDecko().setSpeed(deckId, parseFloat(e.target.value))
                   }
                 />
                 <span id="speedValue1">1.00</span>
@@ -84,7 +92,7 @@ const DeckComponent: React.FC<DeckComponentProps> = ({ deckId }) => {
                   max="100"
                   value={currentTime}
                   onChange={e =>
-                    decko.seekDeck(deckId, parseFloat(e.target.value))
+                    getDecko().seekDeck(deckId, parseFloat(e.target.value))
                   }
                 />
                 <span id="time1">
