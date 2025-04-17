@@ -4,9 +4,10 @@ import ContextApp from '@/contextVersion/ContextApp'
 import { DeckoProvider as ContextDeckoProvider } from '@/contextVersion/DeckoProvider'
 import ObserverApp from '@/observerVersion/ObserverApp'
 import { DeckoProvider as ObserverDeckoProvider } from '@/observerVersion/DeckoProvider'
+import ZustandApp from '@/zustandVersion/ZustandApp'
 
 // Define which test to run
-let WHICH_TEST: string = 'observer'
+let WHICH_TEST: string = 'zustand'
 
 const rootElement = document.getElementById('root')!
 
@@ -26,5 +27,5 @@ if (WHICH_TEST === 'context') {
     </ObserverDeckoProvider>
   )
 } else {
-  throw new Error(`Unknown test: ${WHICH_TEST}`)
+  createRoot(rootElement).render(<ZustandApp />)
 }

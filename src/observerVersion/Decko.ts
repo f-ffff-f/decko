@@ -50,10 +50,6 @@ export class Decko {
 
   private notify(eventType: DeckoEventType, payload?: any) {
     this.listeners.get(eventType)?.forEach(listener => listener(payload))
-    // 모든 상태 변경 시 'stateChange' 이벤트도 발생시켜 범용적인 업데이트 처리 가능
-    if (eventType !== 'stateChange' && eventType !== 'playbackTimeUpdate') {
-      this.listeners.get('stateChange')?.forEach(listener => listener())
-    }
   }
   // --- ---
 

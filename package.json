@@ -1,6 +1,6 @@
 {
     "name": "@ghr95223/decko",
-    "version": "1.1.10",
+    "version": "1.2.0",
     "description": "A Web Audio API-based deck manager for DJ applications",
     "main": "dist/decko.cjs.js",
     "module": "dist/decko.es.js",
@@ -37,5 +37,8 @@
         "ts-jest": "^29.2.6",
         "vite": "^6.2.1",
         "vite-plugin-dts": "^4.5.3"
+    },
+    "dependencies": {
+        "zustand": "^5.0.3"
     }
 }
