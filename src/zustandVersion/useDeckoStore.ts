@@ -26,10 +26,10 @@ export const useDeckoStore = create<DeckStore>(set => ({
   setCrossFade: value => set({ crossFade: value }),
 }))
 
+export const selectCrossFade = (state: DeckStore) => state.crossFade
+
 export const selectDeck = (id: EDeckIds) => (state: DeckStore) =>
   state.decks[id]
-
-export const selectCrossFade = (state: DeckStore) => state.crossFade
 
 // 개별 속성 선택용 selector
 export const selectDeckVolume = (id: EDeckIds) => (state: DeckStore) =>

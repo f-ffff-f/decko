@@ -7,7 +7,7 @@ import {
   useDeckoStore,
   selectDeckAudioBufferDuration,
 } from '@/zustandVersion/useDeckoStore'
-import { getDecko } from '@/zustandVersion/Decko'
+import { getDecko } from '@/zustandVersion/getDecko'
 
 interface DeckComponentProps {
   deckId: EDeckIds

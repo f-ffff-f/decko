@@ -2,7 +2,7 @@ import DeckComponent from '@/zustandVersion/DeckComponent'
 import { EDeckIds } from '@/constants'
 import { selectCrossFade, useDeckoStore } from '@/zustandVersion/useDeckoStore'
 const deckIds = Object.values(EDeckIds).filter(key => !isNaN(Number(key)))
-import { getDecko } from '@/zustandVersion/Decko'
+import { getDecko } from '@/zustandVersion/getDecko'
 
 const ZustandApp = () => {
   const crossFade = useDeckoStore(selectCrossFade)

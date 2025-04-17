@@ -9,3 +9,7 @@ export { useDeckoState as ObserverUseDeckoState } from '@/observerVersion/useDec
 export { useCrossfade as ObserverUseCrossfade } from '@/observerVersion/useCrossfade'
 
 export { EDeckIds } from '@/constants'
+
+/* zustand version */
+export { useDeckoStore as ZustandUseDeckoStore } from '@/zustandVersion/useDeckoStore'
+export { getDecko as ZustandGetDecko } from '@/zustandVersion/getDecko'
