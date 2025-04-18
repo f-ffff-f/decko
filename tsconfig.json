@@ -1,11 +1,18 @@
 {
   "compilerOptions": {
     "target": "ES6",
-    "module": "ES6",
+    "module": "ESNext",
     "declaration": true,
     "emitDeclarationOnly": true,
     "outDir": "dist",
-    "strict": true
+    "strict": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "include": ["src/**/*.ts", "tests", "tests/jest.setup.js"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests", "tests/jest.setup.js"]
 }

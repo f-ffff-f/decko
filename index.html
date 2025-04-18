@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decko Example</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .deck-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .deck {
+            flex: 1;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .deck.loading {
+            background-color: #fff8e6;
+        }
+
+        .loading-indicator {
+            color: #ff6700;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        #deck1-status,
+        #deck2-status {
+            margin-top: 10px;
+            font-size: 14px;
+            transition: opacity 1s ease;
+        }
+
+        .controls {
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 8px 12px;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .crossfader {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .file-input {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 이 div가 React 애플리케이션의 진입점입니다 -->
+    <div id="root"></div>
+    <!-- 이 스크립트가 React 앱을 로드합니다 -->
+    <script type="module" src="/src/main.tsx"></script>
+
+</body>
+
+</html>
