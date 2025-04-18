@@ -14,6 +14,8 @@ export { EDeckIds } from '@/constants'
 export { useDeckoStore as ZustandUseDeckoStore } from '@/zustandVersion/useDeckoStore'
 export { getDecko as ZustandGetDecko } from '@/zustandVersion/getDecko'
 
+export { selectCrossFade as ZustandSelectCrossFade } from '@/zustandVersion/useDeckoStore'
+export { selectDeck as ZustandSelectDeck } from '@/zustandVersion/useDeckoStore'
 export { selectDeckVolume as ZustandSelectDeckVolume } from '@/zustandVersion/useDeckoStore'
 export { selectDeckSpeed as ZustandSelectDeckSpeed } from '@/zustandVersion/useDeckoStore'
 export { selectDeckIsPlaying as ZustandSelectDeckIsPlaying } from '@/zustandVersion/useDeckoStore'
