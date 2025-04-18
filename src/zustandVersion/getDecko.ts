@@ -13,6 +13,5 @@ export function getDecko(): Decko {
   if (!deckoInstance) {
     deckoInstance = new Decko()
   }
-  console.log(deckoInstance)
   return deckoInstance
 }

@@ -70,7 +70,6 @@ export class Decko {
 
   /** 특정 데크에 파일 로드 */
   async loadTrack(deckId: EDeckIds, blob: Blob) {
-    console.log('loadTrack', deckId)
     const deck = this.findDeck(deckId)
     if (!deck) return
 

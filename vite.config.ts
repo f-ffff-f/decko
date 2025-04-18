@@ -17,6 +17,11 @@ export default defineConfig({
     },
     outDir: 'dist',
     sourcemap: true,
+    terserOptions: {
+      compress: {
+        drop_console: true,
+      },
+    },
   },
   plugins: [dts()],
 })
