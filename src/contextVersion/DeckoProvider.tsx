@@ -1,9 +1,14 @@
-import { ReactNode, useRef } from 'react'
+import { ReactNode, useEffect, useRef } from 'react'
 import { DeckoContext } from '@/contextVersion/context'
-import { Decko } from '@/contextVersion/Decko'
 
 export const DeckoProvider = ({ children }: { children: ReactNode }) => {
-  const deckoRef = useRef<InstanceType<typeof Decko> | null>(new Decko())
+  const deckoRef = useRef<InstanceType<any> | null>(null)
+
+  useEffect(() => {
+    import('@/contextVersion/Decko').then(module => {
+      deckoRef.current = new module.Decko()
+    })
+  }, [])
 
   return (
     <DeckoContext.Provider value={deckoRef.current}>
