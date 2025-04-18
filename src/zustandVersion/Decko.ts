@@ -1,5 +1,4 @@
 import { EDeckIds } from '@/constants'
-import { useDeckoStore } from './useDeckoStore'
 
 export interface IDeck {
   id: EDeckIds
@@ -21,8 +20,10 @@ export class Decko {
   private nextId = 1
   private decks: IDeck[] = []
   private crossFadeValue = 0.5
+  private useDeckoStore: any
 
-  constructor() {
+  constructor(useDeckoStore: any) {
+    this.useDeckoStore = useDeckoStore
     this.audioContext = new AudioContext()
     this.init()
   }
@@ -64,7 +65,7 @@ export class Decko {
     }
 
     this.decks.push(deck)
-    useDeckoStore.getState().setDeck(deck.id, deck)
+    this.useDeckoStore.getState().setDeck(deck.id, deck)
     return deck
   }
 
@@ -79,12 +80,12 @@ export class Decko {
       const arrayBuffer = await blob.arrayBuffer()
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
       deck.audioBuffer = audioBuffer
-      useDeckoStore.getState().setDeck(deckId, { audioBuffer })
+      this.useDeckoStore.getState().setDeck(deckId, { audioBuffer })
     } catch (error) {
       console.error('Failed to load audio file:', error)
     } finally {
       deck.isTrackLoading = false
-      useDeckoStore.getState().setDeck(deckId, { isTrackLoading: false })
+      this.useDeckoStore.getState().setDeck(deckId, { isTrackLoading: false })
     }
 
     this.releaseBuffer(deck, 0)
@@ -104,14 +105,14 @@ export class Decko {
     if (deck.isPlaying) {
       const playbackTime = this.getPlaybackTime(deckId)
       this.releaseBuffer(deck, playbackTime)
-      useDeckoStore.getState().setDeck(deckId, { isPlaying: false })
+      this.useDeckoStore.getState().setDeck(deckId, { isPlaying: false })
     } else {
       deck.bufferSourceNode = this.createSourceNode(deck)
       deck.bufferSourceNode.playbackRate.value = deck.speed
       deck.bufferSourceNode.start(0, deck.nextStartTime)
       deck.prevStartTime = this.audioContext.currentTime
       deck.isPlaying = true
-      useDeckoStore
+      this.useDeckoStore
         .getState()
         .setDeck(deckId, { isPlaying: true, prevStartTime: deck.prevStartTime })
     }
@@ -128,18 +129,18 @@ export class Decko {
     }
 
     deck.isSeeking = true
-    useDeckoStore.getState().setDeck(deckId, { isSeeking: true })
+    this.useDeckoStore.getState().setDeck(deckId, { isSeeking: true })
 
     if (deck.isPlaying) {
       this.releaseBuffer(deck, seekTime)
       this.playPauseDeck(deckId)
     } else {
       deck.nextStartTime = seekTime
-      useDeckoStore.getState().setDeck(deckId, { nextStartTime: seekTime })
+      this.useDeckoStore.getState().setDeck(deckId, { nextStartTime: seekTime })
     }
 
     deck.isSeeking = false
-    useDeckoStore.getState().setDeck(deckId, { isSeeking: false })
+    this.useDeckoStore.getState().setDeck(deckId, { isSeeking: false })
   }
 
   /** 개별 볼륨 조절 */
@@ -147,7 +148,7 @@ export class Decko {
     const deck = this.findDeck(deckId)
     if (!deck) return
     deck.gainNode.gain.value = this.clampGain(volume)
-    useDeckoStore.getState().setDeck(deckId, { gainNode: deck.gainNode })
+    this.useDeckoStore.getState().setDeck(deckId, { gainNode: deck.gainNode })
   }
 
   /** 개별 속도 조절 */
@@ -159,16 +160,16 @@ export class Decko {
     if (deck.bufferSourceNode) {
       deck.bufferSourceNode.playbackRate.value = speed
     }
-    useDeckoStore.getState().setDeck(deckId, { speed: deck.speed })
+    this.useDeckoStore.getState().setDeck(deckId, { speed: deck.speed })
   }
 
   /** 크로스페이드 조절 */
   setCrossFade(value: number) {
     this.crossFadeValue = this.clampGain(value)
-    useDeckoStore.getState().setCrossFade(this.crossFadeValue)
+    this.useDeckoStore.getState().setCrossFade(this.crossFadeValue)
     if (this.decks[0]) {
       this.decks[0].crossFadeNode.gain.value = Math.cos((value * Math.PI) / 2)
-      useDeckoStore.getState().setDeck(this.decks[0].id, {
+      this.useDeckoStore.getState().setDeck(this.decks[0].id, {
         crossFadeNode: this.decks[0].crossFadeNode,
       })
     }
@@ -176,7 +177,7 @@ export class Decko {
       this.decks[1].crossFadeNode.gain.value = Math.cos(
         ((1 - value) * Math.PI) / 2
       )
-      useDeckoStore.getState().setDeck(this.decks[1].id, {
+      this.useDeckoStore.getState().setDeck(this.decks[1].id, {
         crossFadeNode: this.decks[1].crossFadeNode,
       })
     }
@@ -196,7 +197,7 @@ export class Decko {
     const deck = this.findDeck(deckId)
     if (!deck) return 0
 
-    useDeckoStore.getState().setDeck(deckId, {
+    this.useDeckoStore.getState().setDeck(deckId, {
       playbackTime: deck.isPlaying
         ? deck.nextStartTime +
           this.getElapsedTime(deck.prevStartTime, deck.speed)
@@ -273,7 +274,7 @@ export class Decko {
     deck.bufferSourceNode = null
     deck.nextStartTime = nextStartTime
     deck.isPlaying = false
-    useDeckoStore
+    this.useDeckoStore
       .getState()
       .setDeck(deck.id, { isPlaying: false, nextStartTime })
   }

@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { EDeckIds } from '@/constants'
-import { Decko, IDeck } from './Decko'
-// Optional import for shallow comparison
+import { IDeck } from './Decko'
 
 export interface DeckStore {
   decks: Partial<Record<EDeckIds, IDeck>>

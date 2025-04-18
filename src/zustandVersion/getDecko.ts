@@ -11,7 +11,8 @@ export function getDecko(): Decko {
     // throw new Error('Decko can only be initialized in a browser environment')
   }
   if (!deckoInstance) {
-    deckoInstance = new Decko()
+    const useDeckoStore = import('@/zustandVersion/useDeckoStore')
+    deckoInstance = new Decko(useDeckoStore)
   }
   console.log(deckoInstance)
   return deckoInstance
