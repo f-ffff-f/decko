@@ -1,208 +1,152 @@
 # Decko
 
-Decko is a deck management library for DJ applications based on the Web Audio API. This library provides basic features needed for DJ applications such as loading audio tracks, play/pause functionality, volume control, speed adjustment, and crossfader capabilities.
+Decko is a deck management library for DJ applications using the Web Audio API and `valtio` for state management. This library provides basic features needed for DJ applications such as loading audio tracks, play/pause functionality, volume control, speed adjustment, and crossfader capabilities, all managed through a reactive state object.
 
 ## Installation
 
-You can install it using npm:
+You can install it using your preferred package manager:
 
 ```bash
-npm install @ghr95223/decko
+npm install @ghr95223/decko valtio
+# or
+yarn add @ghr95223/decko valtio
+# or
+pnpm add @ghr95223/decko valtio
+# or
+bun add @ghr95223/decko valtio
 ```
 
 ## Key Features
 
-- Management of two independent audio decks
-- Loading and play/pause control of audio tracks
-- Volume and playback speed adjustment
-- Transition between two decks via crossfader
-- Track position seeking
-- Easy usage through singleton pattern
+- Management of two independent audio decks via a reactive state object.
+- Loading and play/pause control of audio tracks.
+- Volume and playback speed adjustment.
+- Transition between two decks via crossfader.
+- Track position seeking.
+- Reactive state management using `valtio`.
 
-## Usage
+## Decko State Management: `deckoManager` and `useDeckoSnapshot`
 
-### Example Code
+This document briefly explains how to change Decko's state using `deckoManager` and how to subscribe to those state changes in React components using the `useDeckoSnapshot` hook.
 
-Refer to the `example/basic.html` file for a complete example. This example demonstrates a simple DJ interface that implements loading audio files, play/pause functionality, volume control, speed adjustment, and crossfader features using two decks.
+## Core Concepts
 
-### Running the Example
+1.  **`deckoState` (Valtio Proxy):** A central store containing all application state. It's created as a Valtio `proxy` object, allowing state changes to be tracked. (`src/state.ts`)
+2.  **`deckoManager` (Singleton Class):** Encapsulates the Web Audio API logic and is responsible for directly **modifying** `deckoState`. For example, it performs tasks like playing/pausing tracks, adjusting volume, and updates the relevant state in `deckoState`. (`src/DeckoManager.ts`)
+3.  **`useDeckoSnapshot` (React Hook):** Used within React components to **subscribe** to changes in specific parts of `deckoState` and retrieve their values. It's based on Valtio's `useSnapshot` and provides path-based access and type safety, supporting optimized re-renders. (`src/useDeckoSnapshot.ts`)
 
-To run the example:
+## Modifying State (Using `deckoManager`)
 
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/f-ffff-f/decko.git
-   cd decko
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Open the example in your browser:
-
-   ```bash
-   # Using a local server (e.g., with the 'serve' package)
-   npx serve
-   # Then navigate to http://localhost:3000/example/basic.html
-
-   # Or using Python's built-in HTTP server
-   python -m http.server
-   # Then navigate to http://localhost:8000/example/basic.html
-
-   # Or using PHP's built-in server
-   php -S localhost:8000
-   # Then navigate to http://localhost:8000/example/basic.html
-
-   # Or using Node.js http-server
-   npx http-server
-   # Then navigate to http://localhost:8080/example/basic.html
-   ```
-
-### Basic Usage
+To change the application state, call methods on the `deckoManager` instance. `deckoManager` is provided as a singleton instance, so you can reference and use the same instance from anywhere.
 
 ```typescript
-import { deckoSingleton, EDeckIds } from '@ghr95223/decko'
+import { deckoManager, DECK_IDS } from './path/to/your/decko/library' // Adjust the actual path
 
-// Load a track
-const loadTrack = async (file: File) => {
-  await deckoSingleton.loadTrack(EDeckIds.DECK_1, file)
+// Example: Toggle play/pause for Deck 1
+deckoManager.playPauseDeck(DECK_IDS.ID_1)
+
+// Example: Set volume for Deck 2
+deckoManager.setVolume(DECK_IDS.ID_2, 0.75)
+
+// Example: Set the crossfader value
+deckoManager.setCrossFade(0.3)
+
+// Example: Load a track onto Deck 1 (Requires a Blob object)
+async function loadAndPlay(trackBlob: Blob) {
+  await deckoManager.loadTrack(DECK_IDS.ID_1, trackBlob)
+  // Optionally play immediately after loading
+  // deckoManager.playPauseDeck(DECK_IDS.ID_1);
 }
 
-// Toggle play/pause
-const togglePlayPause = () => {
-  deckoSingleton.playPauseDeck(EDeckIds.DECK_1)
+// Example: Change the playback position of Deck 1 (in seconds)
+deckoManager.seekDeck(DECK_IDS.ID_1, 30) // Seek to the 30-second mark
+```
+
+When you call a method on `deckoManager`, its internal logic runs, and the related state (e.g., `isPlaying`, `volume`, `crossFade`, `uiPlaybackTime`, etc.) is updated directly within the `deckoState` proxy object.
+
+## Subscribing to State Changes (Using `useDeckoSnapshot`)
+
+To detect changes in `deckoState` within a React component and update the UI, use the `useDeckoSnapshot` hook. This hook takes an array representing the path to the specific value within the state object.
+
+```typescript
+import React from 'react'
+import { useDeckoSnapshot } from './path/to/your/decko/library' // Adjust the actual path
+import { DECK_IDS } from './path/to/your/decko/library' // Adjust the actual path
+
+function DeckStatus({
+  deckId,
+}: {
+  deckId: typeof DECK_IDS.ID_1 | typeof DECK_IDS.ID_2
+}) {
+  // Subscribe to the isPlaying state for the corresponding deckId
+  const isPlaying = useDeckoSnapshot(['decks', deckId, 'isPlaying'])
+  // Subscribe to the current playback time (for UI) for the corresponding deckId
+  const playbackTime = useDeckoSnapshot(['decks', deckId, 'uiPlaybackTime'])
+  // Subscribe to the total duration for the corresponding deckId
+  const duration = useDeckoSnapshot(['decks', deckId, 'duration'])
+  // Subscribe to the volume for the corresponding deckId
+  const volume = useDeckoSnapshot(['decks', deckId, 'volume'])
+
+  // Format function (example)
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60)
+    const seconds = Math.floor(time % 60)
+      .toString()
+      .padStart(2, '0')
+    return `${minutes}:${seconds}`
+  }
+
+  return (
+    <div>
+      <h3>Deck {deckId} Status</h3>
+      <p>Status: {isPlaying ? 'Playing' : 'Paused/Stopped'}</p>
+      <p>
+        Time: {formatTime(playbackTime)} / {formatTime(duration)}
+      </p>
+      <p>Volume: {Math.round(volume * 100)}%</p>
+      {/* Add buttons here for play/pause, seek, volume control, etc., calling deckoManager */}
+    </div>
+  )
 }
 
-// Set volume
-const setVolume = (volume: number) => {
-  deckoSingleton.setVolume(EDeckIds.DECK_1, volume) // Value between 0 and 1
+function CrossfaderControl() {
+  // Subscribe to the global crossFade state
+  const crossFadeValue = useDeckoSnapshot(['crossFade'])
+
+  return (
+    <div>
+      <h4>Crossfader</h4>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={crossFadeValue}
+        onChange={e => deckoManager.setCrossFade(parseFloat(e.target.value))} // Change state via deckoManager
+      />
+      <p>Value: {crossFadeValue.toFixed(2)}</p>
+    </div>
+  )
 }
 
-// Set playback speed
-const setSpeed = (speed: number) => {
-  deckoSingleton.setSpeed(EDeckIds.DECK_1, speed) // e.g., 0.5 to 2.0
-}
-
-// Set crossfader
-const setCrossFade = (value: number) => {
-  deckoSingleton.setCrossFade(value) // Value between 0 and 1 (0: deck1, 1: deck2)
-}
-
-// Seek to position in track
-const seekTrack = (time: number) => {
-  deckoSingleton.seekDeck(EDeckIds.DECK_1, time) // In seconds
-}
-
-// Get current playback time
-const getCurrentTime = () => {
-  return deckoSingleton.getPlaybackTime(EDeckIds.DECK_1)
-}
-
-// Get track duration
-const getDuration = () => {
-  return deckoSingleton.getAudioBufferDuration(EDeckIds.DECK_1)
-}
-
-// Check if playing
-const isPlaying = () => {
-  return deckoSingleton.isPlaying(EDeckIds.DECK_1)
-}
-
-// Check is track loading
-const isTrackPlaying = () => {
-  return deckoSingleton.isTrackPlaying(EDeckIds.DECK_1)
+export default function DjConsole() {
+  return (
+    <div>
+      <DeckStatus deckId={DECK_IDS.ID_1} />
+      <DeckStatus deckId={DECK_IDS.ID_2} />
+      <CrossfaderControl />
+    </div>
+  )
 }
 ```
 
-### Example Code
+**Key Features:**
 
-Refer to the `example/basic.html` file for a complete example. This example demonstrates a simple DJ interface that implements loading audio files, play/pause functionality, volume control, speed adjustment, and crossfader features using two decks.
+- **Path-Based Subscription:** By specifying a path like `useDeckoSnapshot(['decks', DECK_IDS.ID_1, 'isPlaying'])`, the component will only re-render when the value of `deckoState.decks[1].isPlaying` changes. Unnecessary re-renders are avoided even if other parts of the state change.
+- **Type Safety:** In a TypeScript environment, incorrect paths can be caught at compile time, and the type of the returned value is accurately inferred.
 
-## API Reference
+## Summary
 
-### Classes and Enums
-
-#### `EDeckIds`
-
-An enum representing deck IDs.
-
-- `DECK_1 = 1`: First deck
-- `DECK_2 = 2`: Second deck
-
-#### `Decko`
-
-A class for managing audio decks.
-
-#### `deckoSingleton`
-
-A singleton instance of the Decko class that can be used throughout the application.
-
-### Main Methods
-
-#### `loadTrack(deckId: EDeckIds, blob: Blob): Promise<void>`
-
-Loads an audio track to the specified deck.
-
-#### `playPauseDeck(deckId: EDeckIds): Promise<void>`
-
-Toggles the playback state of the specified deck.
-
-#### `seekDeck(deckId: EDeckIds, seekTime: number): void`
-
-Changes the playback position of the specified deck.
-
-#### `setVolume(deckId: EDeckIds, volume: number): void`
-
-Sets the volume of the specified deck (value between 0 and 1).
-
-#### `setSpeed(deckId: EDeckIds, speed: number): void`
-
-Sets the playback speed of the specified deck.
-
-#### `setCrossFade(value: number): void`
-
-Sets the crossfade value between the two decks (value between 0 and 1).
-
-#### `getAudioBuffer(deckId: EDeckIds): AudioBuffer | null`
-
-Returns the audio buffer of the specified deck.
-
-#### `getPlaybackTime(deckId: EDeckIds): number`
-
-Returns the current playback time of the specified deck.
-
-#### `getAudioBufferDuration(deckId: EDeckIds): number`
-
-Returns the duration of the audio buffer of the specified deck.
-
-#### `getVolume(deckId: EDeckIds): number`
-
-Returns the current volume of the specified deck.
-
-#### `getSpeed(deckId: EDeckIds): number`
-
-Returns the current playback speed of the specified deck.
-
-#### `getCrossFade(): number`
-
-Returns the current crossfade value.
-
-#### `isPlaying(deckId: EDeckIds): boolean`
-
-Returns the playback state of the specified deck.
-
-#### `isSeeking(deckId: EDeckIds): boolean`
-
-Returns the seeking state of the specified deck.
-
-## License
-
-MIT
-
-## Author
-
-yu ganghyeon
+- To **change** state, call methods on `deckoManager`.
+- To **subscribe** to state changes and reflect them in the UI within React components, use the `useDeckoSnapshot` hook.
+- `deckoState` serves as the central state store connecting these two.
