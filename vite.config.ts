@@ -9,6 +9,9 @@ export default defineConfig({
       fileName: format => `decko.${format}.js`,
       formats: ['es', 'cjs', 'umd'],
     },
+    rollupOptions: {
+      external: ['react', 'valtio'],
+    },
     outDir: 'dist',
     sourcemap: true,
   },
