@@ -7,13 +7,13 @@ Decko is a deck management library for DJ applications using the Web Audio API a
 You can install it using your preferred package manager:
 
 ```bash
-npm install @ghr95223/decko valtio
+npm install @ghr95223/decko
 # or
-yarn add @ghr95223/decko valtio
+yarn add @ghr95223/decko
 # or
-pnpm add @ghr95223/decko valtio
+pnpm add @ghr95223/decko
 # or
-bun add @ghr95223/decko valtio
+bun add @ghr95223/decko
 ```
 
 ## Key Features
