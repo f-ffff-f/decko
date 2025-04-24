@@ -1,34 +1,32 @@
 import { useSnapshot } from 'valtio'
-import { deckoState, IState } from './state'
+import { deckoState, IState } from './state' // state 파일 경로는 실제 프로젝트에 맞게 조정하세요.
 
+// SafePathValue 입 (기존과 동일)
 type SafePathValue<
   T,
   P extends ReadonlyArray<string | number>
-> = P extends readonly [] // 경로가 비었으면 T 반환 (재귀 종료 조건)
+> = P extends readonly []
   ? T
-  : P extends readonly [infer K, ...infer Rest] // 경로 첫 요소 K와 나머지 Rest 분리
-  ? K extends keyof T // K가 T의 유효한 키인가?
-    ? T[K] extends infer NextVal // T[K]의 타입 추론 (undefined 처리 위해)
-      ? Rest extends ReadonlyArray<string | number> // Rest도 유효한 경로 배열인가?
-        ? SafePathValue<NextVal, Rest> // 유효하면 다음 값(NextVal)과 나머지 경로(Rest)로 재귀 호출
-        : never // Rest가 유효한 경로 배열이 아니면 never
-      : never // T[K] 타입 추론 실패 (이론상 발생 어려움)
-    : K extends number // K가 숫자인가? (배열 인덱스 가능성)
-    ? T extends ReadonlyArray<infer U> // T가 배열인가? (요소 타입 U)
-      ? Rest extends ReadonlyArray<string | number> // Rest 유효성 검사
-        ? SafePathValue<U, Rest> // 배열 요소 타입(U)과 나머지 경로(Rest)로 재귀 호출
+  : P extends readonly [infer K, ...infer Rest]
+  ? K extends keyof T
+    ? T[K] extends infer NextVal
+      ? Rest extends ReadonlyArray<string | number>
+        ? SafePathValue<NextVal, Rest>
         : never
-      : undefined // K는 숫자인데 T는 배열이 아님 => 경로 중간에서 undefined
-    : undefined // K가 T의 키도 아니고 숫자도 아님 => 경로 중간에서 undefined
+      : never
+    : K extends number
+    ? T extends ReadonlyArray<infer U>
+      ? Rest extends ReadonlyArray<string | number>
+        ? SafePathValue<U, Rest>
+        : never
+      : undefined // K는 숫자인데 T는 배열이 아님
+    : undefined // K가 T의 키도 아니고 숫자도 아님
   : never // 경로 P가 유효한 형태가 아님
 
-// 객체/배열의 모든 유효한 경로를 튜플의 유니온 형태로 생성하는 타입
-// 재귀 깊이 제한(Depth)을 두어 무한 루프 및 성능 저하 방지
-type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]] // 깊이 제한용 헬퍼
-
-export type ValidPaths<T, D extends number = 5> = [D] extends [never] // 기본 깊이 5 // 깊이 제한 도달 시 never 반환
+type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]]
+export type ValidPaths<T, D extends number = 5> = [D] extends [never]
   ? never
-  : T extends  // T가 원시 타입, Date, 함수 등이면 경로 없음 ([])
+  : T extends
       | string
       | number
       | boolean
@@ -39,63 +37,106 @@ export type ValidPaths<T, D extends number = 5> = [D] extends [never] // 기본 
       | Date
       | Function
   ? []
-  : T extends ReadonlyArray<infer U> // T가 배열일 경우
-  ? // [number] 또는 [number, ...<배열 요소의 경로>] 형태
-    | [number]
-      | (ValidPaths<U, Prev[D]> extends infer Nested // 요소 타입 U로 재귀 호출
-          ? Nested extends ReadonlyArray<string | number> // 재귀 결과가 경로 배열이면
-            ? [number, ...Nested] // 현재 인덱스(number)와 결합
-            : never // 아니면 잘못된 경로
+  : T extends ReadonlyArray<infer U>
+  ?
+      | [number]
+      | (ValidPaths<U, Prev[D]> extends infer Nested
+          ? Nested extends ReadonlyArray<string | number>
+            ? [number, ...Nested]
+            : never
           : never)
-  : T extends object // T가 객체일 경우
+  : T extends object
   ? {
-      // 객체의 각 키 K에 대해
-      [K in keyof T]-?: K extends string | number // 키가 문자열이나 숫자인 경우만 처리
-        ? // [K] 또는 [K, ...<K 속성값의 경로>] 형태
-          | [K]
-            | (ValidPaths<T[K], Prev[D]> extends infer Nested // 속성값 T[K]로 재귀 호출
-                ? Nested extends ReadonlyArray<string | number> // 재귀 결과가 경로 배열이면
-                  ? [K, ...Nested] // 현재 키(K)와 결합
-                  : never // 아니면 잘못된 경로
+      [K in keyof T]-?: K extends string | number
+        ?
+            | [K]
+            | (ValidPaths<T[K], Prev[D]> extends infer Nested
+                ? Nested extends ReadonlyArray<string | number>
+                  ? [K, ...Nested]
+                  : never
                 : never)
-        : never // 키가 심볼 등 다른 타입이면 무시
-    }[keyof T] // 모든 키에 대한 결과를 유니온으로 합침
-  : [] // 위 모든 경우에 해당하지 않으면 경로 없음 ([])
+        : never
+    }[keyof T]
+  : []
 
 type DeckoStatePaths = ValidPaths<IState>
 
 /**
  * Valtio 스냅샷에서 깊은 경로의 값을 타입 안전하게 가져오는 커스텀 훅.
  * 경로 자동 완성 및 컴파일 시점 검증 기능을 제공합니다.
+ * ValidPaths<IState>에 의해 유효성이 검증된 경로에 대해서는 NonNullable 타입을 반환합니다.
  *
  * @template P - IState 내의 유효한 경로 튜플 타입. ValidPaths<IState> 유니온에 속해야 함.
  * @param path - 객체 내 속성에 접근하기 위한 경로 배열 (튜플). 자동 완성 및 검증 대상.
- * @returns 경로에 해당하는 값. 경로가 유효하지 않거나 값이 없으면 타입 추론 결과에 따라 undefined가 포함될 수 있음.
+ * @returns 경로에 해당하는 값. NonNullable<SafePathValue<IState, P>> 타입으로, undefined가 제외됩니다.
+ * (주의: 런타임에 실제로 값이 undefined일 경우 타입과 불일치할 수 있습니다.)
  */
-
 export const useDeckoSnapshot = <P extends DeckoStatePaths>(
-  // path 매개변수의 타입을 P로 제한. P는 DeckoStatePaths 유니온 중 하나여야 함.
-  path: P & ReadonlyArray<string | number> // P와 함께 실제 배열임을 명시
-): SafePathValue<IState, P> => {
-  // 반환 타입은 SafePathValue로 추론
-  // 1. 스냅샷 가져오기
+  path: P & ReadonlyArray<string | number>
+  // --- 변경된 부분 ---
+): NonNullable<SafePathValue<IState, P>> => {
   const snapshot = useSnapshot(deckoState) as IState
 
-  // 2. 경로 탐색 (런타임 로직은 이전과 동일)
   let current: any = snapshot
   for (const key of path) {
+    // 런타임 체크는 여전히 필요합니다.
+    // 만약 이 부분이 실행되면, 실제 반환값은 undefined이지만 타입은 NonNullable이므로
+    // 호출하는 쪽에서 타입 에러 없이 런타임 에러가 발생할 수 있습니다.
     if (current === null || typeof current !== 'object') {
-      // 경로가 중간에 끊기면 SafePathValue<IState, P> 타입은 undefined를 포함하게 됨
-      return undefined as SafePathValue<IState, P>
+      // 타입 시스템은 NonNullable을 기대하지만, 실제로는 undefined를 반환하게 됨.
+      // undefined를 unknown으로 먼저 변환 후 최종 타입으로 단언
+      return undefined as unknown as NonNullable<SafePathValue<IState, P>>
     }
     current = current[key]
     if (current === undefined) {
-      // 경로 중간 또는 최종 값이 undefined인 경우
-      return undefined as SafePathValue<IState, P>
+      // undefined를 unknown으로 먼저 변환 후 최종 타입으로 단언
+      return undefined as unknown as NonNullable<SafePathValue<IState, P>>
     }
   }
 
-  // 3. 최종 값 반환 (타입 단언)
-  // SafePathValue<IState, P>가 반환 타입을 정확히 계산해주므로, current를 해당 타입으로 단언
-  return current as SafePathValue<IState, P>
+  // --- 변경된 부분 ---
+  // 최종 반환 시 NonNullable 타입으로 단언합니다.
+  // 컴파일 시점에 경로 P가 유효하다고 판단했으므로, 개발자는 결과가 undefined가 아님을 가정합니다.
+  return current as NonNullable<SafePathValue<IState, P>>
 }
+
+// --- 예시 사용법 ---
+/*
+interface MyState {
+  user?: {
+    name: string;
+    address: {
+      city: string;
+      zip?: number;
+    }
+  };
+  items: string[];
+}
+
+// 가상의 state와 IState 정의
+const deckoState = {} as MyState;
+type IState = MyState;
+
+function MyComponent() {
+  // 경로 ['user', 'name'] 은 ValidPaths<MyState>에 속함
+  // SafePathValue<MyState, ['user', 'name']> 는 string | undefined 임 (user가 optional 이므로)
+  // NonNullable<SafePathValue<MyState, ['user', 'name']>> 는 string 임
+  const userName = useDeckoSnapshot(['user', 'name']); // 타입: string (컴파일러는 undefined 가능성을 무시)
+  console.log(userName.toUpperCase()); // 타입 에러 없음. 하지만 런타임에 user가 없으면 에러 발생!
+
+  // 경로 ['items', 0] 은 ValidPaths<MyState>에 속함
+  // SafePathValue<MyState, ['items', 0]> 는 string | undefined 임 (배열이 비어있을 수 있으므로)
+  // NonNullable<SafePathValue<MyState, ['items', 0]>> 는 string 임
+  const firstItem = useDeckoSnapshot(['items', 0]); // 타입: string (컴파일러는 undefined 가능성을 무시)
+
+  // 경로 ['user', 'address', 'zip'] 는 ValidPaths<MyState>에 속함
+  // SafePathValue<MyState, ['user', 'address', 'zip']> 는 number | undefined 임 (zip이 optional)
+  // NonNullable<SafePathValue<MyState, ['user', 'address', 'zip']>> 는 number 임
+  const zipCode = useDeckoSnapshot(['user', 'address', 'zip']); // 타입: number (컴파일러는 undefined 가능성을 무시)
+
+  // 경로 ['invalid', 'path'] 는 ValidPaths<MyState>에 속하지 않으므로 컴파일 에러 발생
+  // const invalid = useDeckoSnapshot(['invalid', 'path']);
+
+  return <div>...</div>;
+}
+*/

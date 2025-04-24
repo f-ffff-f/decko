@@ -9,8 +9,6 @@ const Deck = ({ deckId }: DeckProps) => {
   const deckState = useDeckoSnapshot(['decks', deckId])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  if (!deckState) return null
-
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0]
