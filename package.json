@@ -4,7 +4,7 @@
     "description": "A Web Audio API-based deck manager for DJ applications",
     "main": "dist/decko.cjs.js",
     "module": "dist/decko.es.js",
-    "types": "dist/src/index.d.ts",
+    "types": "dist/index.d.ts",
     "files": [
         "dist",
         "README.md",
