@@ -1,6 +1,6 @@
 {
     "name": "@ghr95223/decko",
-    "version": "1.3.2",
+    "version": "1.3.3",
     "type": "module",
     "description": "A Web Audio API-based deck manager for DJ applications",
     "main": "dist/decko.cjs.js",
