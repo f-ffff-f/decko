@@ -40,7 +40,7 @@ This document briefly explains how to change Decko's state using `deckoManager` 
 To change the application state, call methods on the `deckoManager` instance. `deckoManager` is provided as a singleton instance, so you can reference and use the same instance from anywhere.
 
 ```typescript
-import { deckoManager, DECK_IDS } from './path/to/your/decko/library' // Adjust the actual path
+import { deckoManager, DECK_IDS } from '@ghr95223/decko'
 
 // Example: Toggle play/pause for Deck 1
 deckoManager.playPauseDeck(DECK_IDS.ID_1)
@@ -70,8 +70,8 @@ To detect changes in `deckoState` within a React component and update the UI, us
 
 ```typescript
 import React from 'react'
-import { useDeckoSnapshot } from './path/to/your/decko/library' // Adjust the actual path
-import { DECK_IDS } from './path/to/your/decko/library' // Adjust the actual path
+import { useDeckoSnapshot } from '@ghr95223/decko'
+import { DECK_IDS } from '@ghr95223/decko'
 
 function DeckStatus({
   deckId,
