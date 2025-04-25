@@ -14,7 +14,6 @@ interface IDeckState {
   isSeeking: boolean
   isTrackLoading: boolean
   volume: number
-  // UI 표시용 현재 재생 시간 필드 추가
   uiPlaybackTime: number
 }
 
