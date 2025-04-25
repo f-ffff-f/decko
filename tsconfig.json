@@ -8,5 +8,5 @@
     "outDir": "dist",
     "strict": true
   },
-  "include": ["src/**/*.ts", "tests", "tests/jest.setup.js"]
+  "include": ["src/**/*.ts", "tests", "tests/jest.setup.mjs"]
 }

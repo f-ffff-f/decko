@@ -1,5 +1,5 @@
 import { useSnapshot } from 'valtio'
-import { deckoState, IState } from './state' // state 파일 경로는 실제 프로젝트에 맞게 조정하세요.
+import { deckoState, IState } from './state'
 
 // SafePathValue 입 (기존과 동일)
 type SafePathValue<
