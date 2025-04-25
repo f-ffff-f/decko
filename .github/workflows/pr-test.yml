@@ -7,7 +7,6 @@ on:
 
 jobs:
   test:
-    # ubuntu-latest 환경에서 apt-get 사용 가능
     runs-on: ubuntu-latest
 
     steps:
@@ -17,21 +16,21 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20 # 사용하시는 Node.js 버전에 맞게 유지
+          node-version: 20
 
       - name: Install dependencies
         run: npm install
 
-      # --- 여기에 PulseAudio 설치 스텝 추가 ---
-      - name: Install PulseAudio (Virtual Audio Sink)
+      - name: Install PulseAudio
         run: |
-          # 패키지 목록 업데이트 (-y 플래그 추가)
           sudo apt-get update -y
-          # PulseAudio 설치 (-y 플래그로 확인 프롬프트 자동 승인)
           sudo apt-get install -y pulseaudio
-      # --- PulseAudio 설치 스텝 끝 ---
+
+      # --- 여기에 PulseAudio 서버 시작 스텝 추가 ---
+      - name: Start PulseAudio Server
+        run: pulseaudio --start --exit-idle-time=-1 # 백그라운드에서 데몬으로 시작하고 자동 종료 방지
+      # 또는 pulseaudio -D 를 사용할 수도 있습니다.
+      # --- PulseAudio 서버 시작 스텝 끝 ---
+
       - name: Run tests
-        # CI 환경 변수를 명시적으로 설정하여 테스트 코드에서 활용 가능
-        # env:
-        #   CI: true # GitHub Actions는 기본적으로 CI=true를 설정하지만 명시할 수도 있음
         run: npm run test
