@@ -15,5 +15,11 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
-  plugins: [dts()],
+  plugins: [
+    dts({
+      insertTypesEntry: true,
+      include: ['src/**/*.ts'],
+      outDir: 'dist',
+    }),
+  ],
 })
