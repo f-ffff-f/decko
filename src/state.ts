@@ -19,7 +19,7 @@ interface IDeckState {
 
 export interface IState {
   decks: {
-    [key in TDeckId]?: IDeckState
+    [key in TDeckId]: IDeckState
   }
   crossFade: number
 }

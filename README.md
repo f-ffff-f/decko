@@ -66,7 +66,7 @@ When you call a method on `deckoManager`, its internal logic runs, and the relat
 
 ## Subscribing to State Changes (Using `useDeckoSnapshot`)
 
-To detect changes in `deckoState` within a React component and update the UI, use the `useDeckoSnapshot` hook. This hook takes an array representing the path to the specific value within the state object.
+To detect changes in `deckoState` within a React component and update the UI, use the `useDeckoSnapshot` hook. This hook returns the entire state object and automatically triggers re-renders when any part of the state changes that your component uses.
 
 ```typescript
 import React from 'react'
@@ -78,14 +78,14 @@ function DeckStatus({
 }: {
   deckId: typeof DECK_IDS.ID_1 | typeof DECK_IDS.ID_2
 }) {
-  // Subscribe to the isPlaying state for the corresponding deckId
-  const isPlaying = useDeckoSnapshot(['decks', deckId, 'isPlaying'])
-  // Subscribe to the current playback time (for UI) for the corresponding deckId
-  const playbackTime = useDeckoSnapshot(['decks', deckId, 'uiPlaybackTime'])
-  // Subscribe to the total duration for the corresponding deckId
-  const duration = useDeckoSnapshot(['decks', deckId, 'duration'])
-  // Subscribe to the volume for the corresponding deckId
-  const volume = useDeckoSnapshot(['decks', deckId, 'volume'])
+  // Get the entire state snapshot
+  const snapshot = useDeckoSnapshot()
+
+  // Access specific properties from the snapshot
+  const isPlaying = snapshot.decks[deckId].isPlaying
+  const playbackTime = snapshot.decks[deckId].uiPlaybackTime
+  const duration = snapshot.decks[deckId].duration
+  const volume = snapshot.decks[deckId].volume
 
   // Format function (example)
   const formatTime = (time: number) => {
@@ -110,8 +110,11 @@ function DeckStatus({
 }
 
 function CrossfaderControl() {
-  // Subscribe to the global crossFade state
-  const crossFadeValue = useDeckoSnapshot(['crossFade'])
+  // Get the entire state snapshot
+  const snapshot = useDeckoSnapshot()
+
+  // Access the crossFade value
+  const crossFadeValue = snapshot.crossFade
 
   return (
     <div>
@@ -128,22 +131,7 @@ function CrossfaderControl() {
     </div>
   )
 }
-
-export default function DjConsole() {
-  return (
-    <div>
-      <DeckStatus deckId={DECK_IDS.ID_1} />
-      <DeckStatus deckId={DECK_IDS.ID_2} />
-      <CrossfaderControl />
-    </div>
-  )
-}
 ```
-
-**Key Features:**
-
-- **Path-Based Subscription:** By specifying a path like `useDeckoSnapshot(['decks', DECK_IDS.ID_1, 'isPlaying'])`, the component will only re-render when the value of `deckoState.decks[1].isPlaying` changes. Unnecessary re-renders are avoided even if other parts of the state change.
-- **Type Safety:** In a TypeScript environment, incorrect paths can be caught at compile time, and the type of the returned value is accurately inferred.
 
 ## Summary
 
