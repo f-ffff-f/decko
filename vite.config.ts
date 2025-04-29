@@ -7,7 +7,7 @@ export default defineConfig({
       entry: 'src/index.ts',
       name: 'Decko',
       fileName: format => `decko.${format}.js`,
-      formats: ['es', 'cjs', 'umd'],
+      formats: ['es', 'cjs'],
     },
     rollupOptions: {
       external: ['react', 'valtio'],
