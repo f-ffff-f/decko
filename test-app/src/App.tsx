@@ -8,7 +8,7 @@ const App = () => {
     deckoManager.setCrossFade(value)
   }
 
-  const crossFade = useDeckoSnapshot(['crossFade'])
+  const snapshot = useDeckoSnapshot()
 
   return (
     <div className="app-container">
@@ -19,13 +19,13 @@ const App = () => {
 
         <div className="crossfade-control">
           <label>
-            Crossfade: {crossFade.toFixed(2)}
+            Crossfade: {snapshot.crossFade.toFixed(2)}
             <input
               type="range"
               min="0"
               max="1"
               step="0.01"
-              value={crossFade}
+              value={snapshot.crossFade}
               onChange={handleCrossFadeChange}
             />
           </label>
