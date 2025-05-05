@@ -1,7 +1,7 @@
 // src/DeckoManager.ts
-import { DECK_IDS, TDeckId } from './constants'
-import { deckoState } from './state'
-
+import { DECK_IDS } from './constants'
+import { IDeckState, IGlobalState, IState, TDeckId } from './type'
+import subscribers from './subscribers'
 export class DeckoManager {
   private audioContext: AudioContext
   private masterGainNode: GainNode | null = null
@@ -38,6 +38,7 @@ export class DeckoManager {
 
     this.masterGainNode = this.audioContext.createGain()
     this.masterGainNode.gain.value = 0.5
+    this.publish([DECK_IDS.GLOBAL, 'crossFade'], 0.5)
     this.masterGainNode.connect(this.audioContext.destination)
 
     Object.values(DECK_IDS).forEach(deckId => {
@@ -62,7 +63,9 @@ export class DeckoManager {
     this.bufferSourceNodes.set(deckId, null)
     this.audioBuffers.set(deckId, null)
 
-    gainNode.gain.value = this.clampGain(deckState.volume)
+    const initialVolume = this.clampGain(deckState.volume)
+    this.publish([deckId, 'volume'], initialVolume)
+    gainNode.gain.value = initialVolume
   }
 
   async loadTrack(deckId: TDeckId, blob: Blob) {
@@ -82,6 +85,7 @@ export class DeckoManager {
 
     this.releaseBufferSourceNode(deckId)
 
+    this.publish([deckId, 'isTrackLoading'], true)
     deckState.isTrackLoading = true
     deckState.audioBufferLoaded = false
     deckState.duration = 0
@@ -98,16 +102,21 @@ export class DeckoManager {
       this.audioBuffers.set(deckId, audioBuffer)
 
       // valtio 상태 업데이트
+      this.publish([deckId, 'audioBufferLoaded'], true)
+      this.publish([deckId, 'duration'], audioBuffer.duration)
       deckState.audioBufferLoaded = true
       deckState.duration = audioBuffer.duration
       // valtio_nextStartTime은 위에서 설정했거나 0임
     } catch (error) {
       console.error(`[Deck ${deckId}] Failed to load audio file:`, error)
+      this.publish([deckId, 'audioBufferLoaded'], false)
+      this.publish([deckId, 'duration'], 0)
       deckState.audioBufferLoaded = false
       deckState.duration = 0
       deckState.uiPlaybackTime = 0 // UI 시간 초기화
       this.audioBuffers.set(deckId, null)
     } finally {
+      this.publish([deckId, 'isTrackLoading'], false)
       deckState.isTrackLoading = false
     }
   }
@@ -130,6 +139,7 @@ export class DeckoManager {
     if (deckState.isPlaying) {
       // --- 일시정지 ---
       const currentPlaybackTime = this.getPlaybackTime(deckId)
+      this.publish([deckId, 'isPlaying'], false)
       this.stopDeckInternal(deckId, currentPlaybackTime)
       // 모든 덱이 멈췄는지 확인하고 루프 중지
       this.checkAndStopPlaybackTimeUpdates()
@@ -146,6 +156,7 @@ export class DeckoManager {
 
       // valtio 상태 업데이트
       deckState.valtio_prevStartTime = this.audioContext.currentTime
+      this.publish([deckId, 'isPlaying'], true)
       deckState.isPlaying = true
       // UI 재생 시간도 바로 업데이트 시작 (선택사항)
       deckState.uiPlaybackTime = this.getPlaybackTime(deckId)
@@ -163,6 +174,8 @@ export class DeckoManager {
 
     const validSeekTime = Math.max(0, Math.min(seekTime, deckState.duration))
 
+    this.publish([deckId, 'valtio_nextStartTime'], validSeekTime)
+    this.publish([deckId, 'isSeeking'], true)
     deckState.isSeeking = true
 
     if (deckState.isPlaying) {
@@ -176,16 +189,16 @@ export class DeckoManager {
     }
 
     deckState.isSeeking = false
+    this.publish([deckId, 'isSeeking'], false)
   }
 
   setVolume(deckId: TDeckId, volume: number) {
-    const deckState = deckoState.decks[deckId]
     const gainNode = this.gainNodes.get(deckId)
 
-    if (!deckState || !gainNode) return
+    if (!gainNode) return
 
     const clampedVolume = this.clampGain(volume)
-    deckState.volume = clampedVolume
+    this.publish([deckId, 'volume'], clampedVolume)
     gainNode.gain.linearRampToValueAtTime(
       clampedVolume,
       this.audioContext!.currentTime + 0.05
@@ -199,6 +212,7 @@ export class DeckoManager {
     if (!deckState) return
 
     const clampedSpeed = Math.max(0.1, Math.min(speed, 4))
+    this.publish([deckId, 'speed'], clampedSpeed)
     deckState.speed = clampedSpeed
 
     if (bufferSourceNode && deckState.isPlaying) {
@@ -212,6 +226,7 @@ export class DeckoManager {
 
   setCrossFade(value: number) {
     const clampedValue = this.clampGain(value)
+    this.publish([1, 'volume'], clampedValue)
     deckoState.crossFade = clampedValue
     this.applyCrossFade(clampedValue)
   }
@@ -263,6 +278,7 @@ export class DeckoManager {
           // 재생 중인 덱만 업데이트
           const calculatedTime = this.getPlaybackTime(deckId)
           // valtio 상태 업데이트
+          this.publish([deckId, 'uiPlaybackTime'], calculatedTime)
           deckState.uiPlaybackTime = calculatedTime
         }
       })
@@ -281,13 +297,28 @@ export class DeckoManager {
       Object.values(DECK_IDS).forEach(deckId => {
         const deckState = deckoState.decks[deckId]
         if (deckState && !deckState.isPlaying) {
-          deckState.uiPlaybackTime = deckState.duration // 끝났으면 총 길이로 표시
+          const finalTime = deckState.duration
+          this.publish([deckId, 'uiPlaybackTime'], finalTime)
+          deckState.uiPlaybackTime = finalTime // 끝났으면 총 길이로 표시
         }
       })
     }
   }
 
   // --- 내부 헬퍼 함수 ---
+
+  private publish<T extends keyof IDeckState | keyof IGlobalState>(
+    key: [TDeckId, T],
+    value: T extends keyof IDeckState
+      ? IDeckState[T]
+      : IGlobalState[keyof IGlobalState]
+  ) {
+    for (const subscriber of subscribers) {
+      if (subscriber[0] === key) {
+        subscriber[1](value)
+      }
+    }
+  }
 
   private stopDeckInternal(deckId: TDeckId, nextStartTime: number) {
     const deckState = deckoState.decks[deckId]
@@ -296,8 +327,11 @@ export class DeckoManager {
     this.releaseBufferSourceNode(deckId)
 
     // valtio 상태 업데이트
+    this.publish<'valtio_nextStartTime'>(
+      [deckId, 'valtio_nextStartTime'],
+      nextStartTime
+    )
     deckState.valtio_nextStartTime = nextStartTime
-    deckState.isPlaying = false
     // UI 재생 시간은 다음 루프에서 업데이트되거나 정지 시 확정됨
   }
 
@@ -348,9 +382,14 @@ export class DeckoManager {
       if (deckoState.decks[deckId]?.isPlaying) {
         console.log(`Deck ${deckId} finished playing.`)
         // 자연스럽게 끝난 경우, 재생 시간을 총 길이로 확정
-        deckoState.decks[deckId]!.uiPlaybackTime =
-          deckoState.decks[deckId]!.duration
-        this.stopDeckInternal(deckId, deckoState.decks[deckId]!.duration) // 내부 상태 정지
+        const finalDuration = deckoState.decks[deckId]!.duration
+        this.publish<'uiPlaybackTime'>(
+          [deckId, 'uiPlaybackTime'],
+          finalDuration
+        )
+        deckoState.decks[deckId]!.uiPlaybackTime = finalDuration
+        this.publish<'isPlaying'>([deckId, 'isPlaying'], false)
+        this.stopDeckInternal(deckId, finalDuration) // 내부 상태 정지
         this.checkAndStopPlaybackTimeUpdates() // 모든 덱 멈췄는지 확인 후 루프 중지
       }
       // else { console.log(`Deck ${deckId} stopped manually.`); } // 수동 정지 로그 (디버깅용)

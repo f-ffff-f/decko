@@ -1,3 +1,2 @@
 export * from './constants'
-export * from './DeckoManager'
-export * from './useDeckoSnapshot'
+export * from './useDecko'
